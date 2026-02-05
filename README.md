@@ -1,226 +1,317 @@
-# Agent Diff
+# Diff the Universe
 
-**Interactive environments for evaluating AI agents & RL training on replicas of 3rd party APIs like Linear or Slack.**
+**Typed database operations and state tracking for building AI agent evaluation frameworks.**
 
-Run it locally (or deploy it). Agents call sandboxed replicas of APIs that behave like the real ones, and you get deterministic diffs of every state change — no external services, no side effects, no rate limits.
+This package provides typed CRUD operations for Box, Google Calendar, Slack, and Linear that work as AI agent tools, along with utilities for capturing and diffing state changes during agent execution.
 
-<p align="center">
-  <a href="https://agentdiff.dev">Website</a> •
-  <a href="https://agentdiff.mintlify.app/introduction">Docs</a> •
-  <a href="mailto:hubert@uni.minerva.edu">Feedback</a>
-</p>
+## Installation
 
+Install directly from GitHub using uv:
+
+```bash
+uv pip install git+https://github.com/portofcontext/agent-diff.git#subdirectory=backend
+```
+
+Or add to your project's `pyproject.toml`:
+
+```toml
+[project]
+dependencies = [
+    "diff-the-universe @ git+https://github.com/portofcontext/agent-diff.git#subdirectory=backend"
+]
+```
 
 ## Quick Start
 
-### 1. Install SDK
-
-**Python:** [Python SDK docs](sdk/agent-diff-python/README.md)
-```bash
-uv add agent-diff
-```
-
-**TypeScript:** [TS SDK docs](sdk/agent-diff-ts/README.md)
-```bash
-npm install agent-diff
-```
-
-### 2. Configure
-
-<details>
-<summary><b> Hosted</b></summary>
-
-1. Sign up at [agentdiff.dev](https://agentdiff.dev) and get your API key
-2. Set environment variables:
-
-```bash
-export AGENT_DIFF_API_KEY="ad_live_sk_..."
-export AGENT_DIFF_BASE_URL="https://api.agentdiff.dev"
-```
-
-</details>
-
-<details>
-<summary><b>Self-Hosted</b></summary>
-
-```bash
-git clone https://github.com/hubertpysklo/agent-diff.git
-cd agent-diff/ops
-docker-compose up --build
-# Backend runs on http://localhost:8000
-```
-
-</details>
-
-### 3. Flow
 ```python
-from agent_diff import AgentDiff
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from services.box.database.typed_operations import BoxOperations
+from eval_platform.eval_utilities import EvalContext
 
-# Self-hosted (defaults to http://localhost:8000)
-client = AgentDiff()
+# Setup database
+engine = create_engine("sqlite:///test.db")
+session = sessionmaker(bind=engine)()
 
-# Initialise isolated environment from a template. See: examples/slack/seeds
-env = client.init_env(templateService="slack", templateName="slack_default",
-impersonateUserId="U01AGENBOT9", TTL="3600") #impersonateUserId - seeded user account that agent will use
+# Use typed operations as AI agent tools
+ops = BoxOperations(session)
 
-# print(env.environmentUrl) = http://localhost:8000/api/env/{environmentId}/services/slack
-
-# Take before snapshot
-run = client.start_run(envId=env.environmentId)
-
-# Your agent does stuff using the environment URL 
-# You can swap the URLs in MCPs or use the code executor tool (Python or bash) with a proxy 
-
-# Using CodeExecutorProxy with OpenAI Agents SDK (For Vercel AI, check TS SDK docs)
-from agent_diff import PythonExecutorProxy, create_openai_tool
-from agents import Agent, Runner
-
-# Create executor (auto-loads from AGENT_DIFF_API_KEY and AGENT_DIFF_BASE_URL env vars)
-python_executor = PythonExecutorProxy(env.environmentId)
-python_tool = create_openai_tool(python_executor) 
-
-agent = Agent(
-        name="Slack Assistant",
-        instructions="Use execute_python tool to interact with Slack API at https://slack.com/api/*. Complete the task using the tools provided. Authentication is handled automatically via proxy. Leave a placeholder credential where you would add a real token.",
-        tools=[python_tool] # python_tool (or bash_tool) where agent will write code
+# Track state changes automatically
+with EvalContext(session, "test_env") as ctx:
+    # Agent actions
+    user = ops.create_user(
+        name="John Doe",
+        login="john@example.com",
+        job_title="Engineer"
+    )
+    folder = ops.create_folder(
+        name="Reports",
+        parent_id="0",
+        user_id=user.user_id
     )
 
-response = await Runner.run(agent, "Post 'Hello' to Slack channel #general")
-
-# The agent writes normal code like:
-# requests.post('https://slack.com/api/chat.postMessage', ...)
-# But it will be proxied to the temporary sandbox environment
-# e.g. transforms:
-# from: https://api.slack.com/api/conversations.list
-# to: http://localhost:8000/api/env/{environmentId}/services/slack/conversations.list 
-
-# Compute diff (changes in the environment) and get results
-diff = client.diff_run(runId=run.runId)
-
-# Inspect changes
-print(diff.diff['inserts'])   # New records, e.g. new message or user added by agent
-print(diff.diff['updates'])   # Modified records, edited message
-print(diff.diff['deletes'])   # Deleted records, deleted message, linear issue, etc.
-
-# Clean up
-client.delete_env(envId=env.environmentId)
-
+    # Automatic diff tracking
+    assert len(ctx.inserts) == 2  # User and folder created
+    assert ctx.inserts[0]['__table__'] == 'box_users'
+    assert ctx.inserts[1]['__table__'] == 'box_folders'
 ```
 
-## Supported APIs
+## Available Operations
 
-- **Slack** – core Web API coverage for conversations, chat, reactions, users, etc. Full list here [`backend/src/services/slack/README.md`](backend/src/services/slack/README.md). A few examples:
-
-  ```python
-  "chat.postMessage"  # post messages in seeded channels/DMs
-  "conversations.open"  # spin up IM/MPIM threads
-  "reactions.add"  # add emoji reactions to seeded messages
-  ```
-
-- **Linear** – GraphQL API. See [`backend/src/services/linear/README.md`](backend/src/services/linear/README.md). 
-
-  ```python
-  "issues"            # list/filter issues with pagination
-  "teams"             # list teams
-  "issueCreate"       # create new issue
-  "issueUpdate"       # update issue (state, assignee, priority, etc.)
-  "commentCreate"     # add comment to issue
-  ```
-
-## Templates, Seeds & Environments
-
-**Templates** are pre-configured database schemas that serve as the starting point for test environments. Think of them as snapshots of a service's state:
-- **Location**: Templates live in PostgreSQL schemas (e.g., `slack_default`, `linear_base`)
-- **Content**: Templates are seeded during startup time from seeds with data like users, channels, messages, issues, etc.
-- **Example Seeds**: **[slack_default](examples/slack/seeds/slack_bench_default.json)** - sample users, channels and messages.
-
-<img width="2330" height="688" alt="image" src="https://github.com/user-attachments/assets/481d3f40-e378-402c-9d3c-8a2ab75c880e" />
-
-**Environments** are isolated, temporary copies of a template schema:
-- **URL**: Each environment has a unique service URL (e.g., `http://localhost:8000/api/env/{env_id}/services/slack`)
-- **Creation**: `client.init_env(templateService="slack", templateName="slack_default", impersonateUserId="U01AGENBOT9")`
-- **Cleanup**: `client.delete_env(envId)` or auto-expires after TTL
-
-<img width="2344" height="432" alt="image" src="https://github.com/user-attachments/assets/c61e93f2-1826-429e-8ee7-4a32f4172a38" />
-
-
-## CodeExecutorProxy
-
-SDK provides **code execution proxies** - tools for AI agents. You add it to your toolbox in Vercel AI SDK, Langchain or OpenAI Agents, making LLM write Python or Bash code to talk with Slack or Linear API. Requests will automatically be intercepted and routed to isolated test environments. This enables agents to interact with service replicas without any code changes. See more in: **[Python SDK](sdk/agent-diff-python/README.md)** 
-
-
-## Evaluations & Test Suites
-
-Collections of test cases with assertions that you can run against agent runs using evaluations.
-
-- **[slack_bench.json](examples/slack/testsuites/slack_bench.json)** - test cases covering message sending, channel ops, reactions, threading
-- **[linear_bench.json](examples/linear/testsuites/linear_bench.json)** - test cases covering issue management, labels, comments, workflow states, and team operations. HF dataset: https://huggingface.co/datasets/hubertmarek/linear-bench-mini . 
-<img width="2985" height="1966" alt="pass_rates_annotated" src="https://github.com/user-attachments/assets/f5c59c81-c3bd-427e-977c-a5c2c0695e86" />
-
-- **[Evaluation DSL](docs/evaluation-dsl.md)** - Check DSL docs on how it works.
-
-<img width="2516" height="1020" alt="image" src="https://github.com/user-attachments/assets/3270f1f1-5afa-4db2-97b0-c35c070ef44f" />
-
-
-### To run evaluations:
+### Box Operations
 
 ```python
-from agent_diff import AgentDiff, PythonExecutorProxy, BashExecutorProxy, create_openai_tool
-from agents import Agent, Runner
+from services.box.database.typed_operations import BoxOperations
 
-client = AgentDiff()
+ops = BoxOperations(session)
 
+# User operations
+user = ops.create_user(name="Alice", login="alice@example.com", job_title="PM")
+user = ops.get_user(user_id)
 
-suite_list = client.list_test_suites(name="Slack Bench")
-slack_suite = suite_list.testSuites[0]
-suite = client.get_test_suite(slack_suite.id, expand=True)
+# Folder operations
+folder = ops.create_folder(name="Q1 Reports", parent_id="0", user_id=user.user_id)
+folder = ops.update_folder(folder_id, name="Q1-Q2 Reports")
+ops.delete_folder(folder_id)
 
-evaluation_results = []
-
-for test in suite.tests:
-    prompt = test.prompt
-    test_id = test.id
-
-    #In test suite you define which env seed template is used for each test
-    env = client.init_env(testId=test_id)
-
-    # This function will take a snapshot before run
-    run = client.start_run(envId=env.environmentId, testId=test_id)
-
-
-    bash_executor = BashExecutorProxy(env.environmentId)  # Auto-loads from env vars
-    bash_tool = create_openai_tool(bash_executor)
-
-    agent = Agent(
-        name="Slack Assistant",
-        instructions="Use execute_bash tool with curl to interact with Slack API at https://slack.com/api/*. Authentication is handled automatically.",
-        tools=[bash_tool]
-    )
-
-    response = await Runner.run(agent, prompt)
-
-    #This function will take a 2nd snapshot, run diff and assert results against expected state defined in test suite
-    
-    #computes eval
-    client.evaluate_run(runId=run.runId)
-    
-    #returns score runId, full diff and score (0/1)
-    run_result = client.get_results_for_run(runId=run.runId)
-
-    evaluation_results.append(run_result) 
-
-    client.delete_env(envId=env.environmentId)
+# File operations
+file = ops.create_file(name="report.pdf", parent_id=folder.folder_id, user_id=user.user_id)
 ```
 
-### Example output:
+### Google Calendar Operations
 
-<img width="1669" height="878" alt="image" src="https://github.com/user-attachments/assets/096393d2-e464-4a3d-b0a8-b188af5cf8a9" />
+```python
+from services.calendar.database.typed_operations import CalendarOperations
 
+ops = CalendarOperations(session)
+
+# Calendar operations
+calendar = ops.create_calendar(
+    summary="Team Calendar",
+    owner_id=user.user_id
+)
+
+# Event operations (require user_id for permissions)
+event = ops.create_event(
+    calendar_id=calendar.calendar_id,
+    user_id=user.user_id,
+    summary="Team Meeting",
+    start={"dateTime": "2024-01-15T10:00:00Z"},
+    end={"dateTime": "2024-01-15T11:00:00Z"}
+)
+events = ops.list_events(calendar_id, user_id)
+ops.update_event(event_id, user_id, summary="Team Standup")
+```
+
+### Slack Operations
+
+```python
+from services.slack.database.typed_operations import SlackOperations
+
+ops = SlackOperations(session)
+
+# Team and channel operations
+team = ops.create_team(name="Engineering", domain="eng")
+channel = ops.create_channel(name="general", team_id=team.team_id)
+
+# Message operations
+message = ops.send_message(
+    channel_id=channel.channel_id,
+    user_id=user.user_id,
+    text="Hello team!"
+)
+ops.add_emoji_reaction(message_id=message.message_id, name="thumbsup", user_id=user.user_id)
+```
+
+### Linear Operations
+
+Linear provides **80+ operations** across 14 entity types with an entity defaults pattern to handle the complex auto-generated schema:
+
+```python
+from services.linear.database.typed_operations import LinearOperations
+
+ops = LinearOperations(session)
+
+# Organization (102 required fields handled automatically)
+org = ops.create_organization(name="Acme Inc")
+
+# Users and teams
+user = ops.create_user(email="alice@acme.com", name="Alice Smith", organizationId=org.id)
+team = ops.create_team(name="Engineering", key="ENG", organization_id=org.id)
+
+# Workflow states
+todo = ops.create_workflow_state(name="Todo", team_id=team.id, type="unstarted")
+in_progress = ops.create_workflow_state(name="In Progress", team_id=team.id, type="started")
+
+# Issues
+issue = ops.create_issue(
+    team_id=team.id,
+    title="Implement authentication",
+    description="Add OAuth2 flow",
+    state_id=todo.id,
+    assignee_id=user.id
+)
+ops.update_issue(issue.id, state_id=in_progress.id)
+
+# Comments, projects, cycles, initiatives, documents, attachments, labels, relations...
+# See LINEAR_CRUD_SUMMARY.md for all 80+ operations
+```
+
+## AI Agent Tool Integration
+
+All operations are designed for use as AI agent tools with:
+
+- **Clear type hints** - `Optional` returns, typed parameters
+- **Comprehensive docstrings** - Parameter descriptions and examples
+- **Pydantic serialization** - `.model_dump()` and `.model_dump_json()` on all models
+- **Session management** - Encapsulated in operation classes
+
+### Example: Anthropic Claude Tool
+
+```python
+tools = [
+    {
+        "name": "create_folder",
+        "description": "Create a new folder in Box",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "description": "Folder name"},
+                "parent_id": {"type": "string", "description": "Parent folder ID"},
+                "user_id": {"type": "string", "description": "Owner user ID"}
+            },
+            "required": ["name", "parent_id", "user_id"]
+        }
+    }
+]
+
+def execute_tool(tool_name, arguments):
+    ops = BoxOperations(session)
+
+    if tool_name == "create_folder":
+        folder = ops.create_folder(**arguments)
+        return folder.model_dump()  # Serialize for agent
+```
+
+## State Management for Evaluations
+
+Track agent actions using snapshots and diffs:
+
+### Using EvalContext (Recommended)
+
+```python
+from eval_platform.eval_utilities import EvalContext
+
+with EvalContext(session, "test_env") as ctx:
+    # Agent executes operations
+    ops = SlackOperations(session)
+    message = ops.send_message(
+        channel_id=channel_id,
+        user_id=user_id,
+        text="Hello world"
+    )
+
+    # Automatic diff tracking
+    assert len(ctx.inserts) == 1
+    assert ctx.inserts[0]['message_text'] == 'Hello world'
+    assert ctx.inserts[0]['__table__'] == 'messages'
+
+# Snapshots automatically cleaned up
+```
+
+### Manual Snapshots
+
+```python
+from eval_platform.eval_utilities import create_snapshot, get_diff
+
+# Before agent runs
+create_snapshot(session, "test_env", "before")
+
+# Agent executes actions...
+ops = BoxOperations(session)
+folder = ops.create_folder(name="Reports", parent_id="0", user_id=user_id)
+
+# After agent runs
+create_snapshot(session, "test_env", "after")
+
+# Get diff
+diff = get_diff(session_manager, "test_env", "before", "after")
+
+print(f"Inserts: {len(diff.inserts)}")  # New rows
+print(f"Updates: {len(diff.updates)}")  # Modified rows
+print(f"Deletes: {len(diff.deletes)}")  # Deleted rows
+
+# Each change includes __table__ to identify origin
+for insert in diff.inserts:
+    print(f"Created {insert['__table__']}: {insert['name']}")
+```
+
+### Clearing State Between Tests
+
+```python
+from eval_platform.eval_utilities import clear_environment
+
+# Clear all data (keeps schema structure)
+clear_environment(session, "test_env")
+```
+
+## Database Compatibility
+
+All services support both PostgreSQL and SQLite:
+
+- **PostgreSQL** - Production use with full schema isolation
+- **SQLite** - Fast, isolated testing and development
+
+```python
+# PostgreSQL
+engine = create_engine("postgresql://user:pass@localhost/dbname")
+
+# SQLite
+engine = create_engine("sqlite:///test.db")
+```
+
+## Running Tests
+
+```bash
+cd backend
+DATABASE_URL=sqlite:///dummy.db PYTHONPATH=src uv run pytest tests/test_sqlite_integration.py tests/test_calendar_sqlite_integration.py tests/test_slack_sqlite_integration.py -v
+```
+
+**Test Results:**
+- ✅ Box: 5/5 passing
+- ✅ Calendar: 6/6 passing
+- ✅ Slack: 5/5 passing
+- ✅ Linear: 80+ operations implemented
 
 ## Documentation
 
-- **[Python SDK](sdk/agent-diff-python/README.md)** - Complete Python SDK reference
-- **[TS SDK](sdk/agent-diff-ts/README.md)** - Complete TS SDK reference
-- **[Evaluation DSL](docs/evaluation-dsl.md)** - Write test assertions
-- **[API Reference](docs/api-reference.md)** - REST API documentation
+- **[AI_AGENT_INTEGRATION.md](backend/AI_AGENT_INTEGRATION.md)** - Complete integration guide
+- **[LINEAR_CRUD_SUMMARY.md](backend/LINEAR_CRUD_SUMMARY.md)** - Linear operations details
+- **[entity_defaults.py](backend/src/services/linear/database/entity_defaults.py)** - Entity defaults pattern
+- **[linear_crud_demo.py](backend/examples/linear_crud_demo.py)** - Usage demonstration
 
+## Architecture
+
+**Service Structure:**
+- `services/{service}/database/schema.py` - SQLAlchemy models with Pydantic serialization
+- `services/{service}/database/typed_operations.py` - Typed CRUD operations
+- `services/{service}/database/entity_defaults.py` - Default value factories (Linear only)
+
+**Eval Platform:**
+- `eval_platform/eval_utilities.py` - Snapshot and diff utilities
+- Supports both PostgreSQL and SQLite
+- Schema isolation for parallel testing
+
+## Key Features
+
+✅ **Typed Operations** - Type-safe CRUD with clear signatures
+✅ **Pydantic Serialization** - All models support `.model_dump()`
+✅ **AI Agent Ready** - Designed as tool interfaces
+✅ **State Tracking** - Automatic diff capture
+✅ **Database Agnostic** - PostgreSQL and SQLite support
+✅ **Entity Defaults** - Handle complex schemas (Linear: 102 fields)
+✅ **Test Coverage** - 16/16 tests passing
+
+## License
+
+MIT
