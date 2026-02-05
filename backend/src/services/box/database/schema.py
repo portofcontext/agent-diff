@@ -20,7 +20,7 @@ from sqlalchemy import (
     LargeBinary,
     Index,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
@@ -115,7 +115,7 @@ class User(Base):
 
     # Notification email (SDK: UserNotificationEmailField)
     # Stored as JSONB: {"email": "...", "is_confirmed": true/false}
-    notification_email: Mapped[Optional[dict]] = mapped_column(JSONB)
+    notification_email: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # === UserFull additional fields (SDK: UserFull) ===
     # Role: 'admin', 'coadmin', 'user'
@@ -123,10 +123,10 @@ class User(Base):
 
     # Enterprise linkage (SDK: UserFullEnterpriseField)
     # Stored as JSONB: {"id": "...", "type": "enterprise", "name": "..."}
-    enterprise: Mapped[Optional[dict]] = mapped_column(JSONB)
+    enterprise: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # Tracking codes (SDK: List[TrackingCode])
-    tracking_codes: Mapped[Optional[list]] = mapped_column(JSONB)
+    tracking_codes: Mapped[Optional[list]] = mapped_column(JSON)
 
     # Boolean flags from UserFull
     can_see_managed_users: Mapped[Optional[bool]] = mapped_column(Boolean)
@@ -139,7 +139,7 @@ class User(Base):
     )
 
     # User tags
-    my_tags: Mapped[Optional[list]] = mapped_column(JSONB)
+    my_tags: Mapped[Optional[list]] = mapped_column(JSON)
 
     # Hostname for links
     hostname: Mapped[Optional[str]] = mapped_column(String(255))
@@ -273,20 +273,20 @@ class Folder(Base):
     sequence_id: Mapped[Optional[str]] = mapped_column(String(10))
 
     # Tags (stored as JSONB array)
-    tags: Mapped[Optional[list]] = mapped_column(JSONB, default=list)
+    tags: Mapped[Optional[list]] = mapped_column(JSON, default=list)
 
     # Collections (stored as JSONB array of collection IDs)
     # Used for favorites - array of {"id": collection_id} or just collection_id strings
-    collections: Mapped[Optional[list]] = mapped_column(JSONB, default=list)
+    collections: Mapped[Optional[list]] = mapped_column(JSON, default=list)
 
     # Shared link (SDK: FolderSharedLinkField)
     # Stored as JSONB with fields: url, effective_access, effective_permission, is_password_enabled,
     # download_count, preview_count, download_url, vanity_url, vanity_name, access, unshared_at, permissions
-    shared_link: Mapped[Optional[dict]] = mapped_column(JSONB)
+    shared_link: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # Folder upload email (SDK: FolderFolderUploadEmailField)
     # Stored as JSONB: {"access": "open"|"collaborators", "email": "..."}
-    folder_upload_email: Mapped[Optional[dict]] = mapped_column(JSONB)
+    folder_upload_email: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # Timestamps
     created_at: Mapped[Optional[datetime]] = mapped_column(
@@ -317,23 +317,23 @@ class Folder(Base):
 
     # Permissions (SDK: FolderFullPermissionsField)
     # JSONB: {can_delete, can_download, can_invite_collaborator, can_rename, can_set_share_access, can_share, can_upload}
-    permissions: Mapped[Optional[dict]] = mapped_column(JSONB)
+    permissions: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # Access levels (JSONB arrays)
-    allowed_shared_link_access_levels: Mapped[Optional[list]] = mapped_column(JSONB)
-    allowed_invitee_roles: Mapped[Optional[list]] = mapped_column(JSONB)
+    allowed_shared_link_access_levels: Mapped[Optional[list]] = mapped_column(JSON)
+    allowed_invitee_roles: Mapped[Optional[list]] = mapped_column(JSON)
 
     # Watermark info (SDK: FolderFullWatermarkInfoField)
     # JSONB: {is_watermarked: bool}
-    watermark_info: Mapped[Optional[dict]] = mapped_column(JSONB)
+    watermark_info: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # Classification (SDK: FolderFullClassificationField)
     # JSONB: {name, definition, color}
-    classification: Mapped[Optional[dict]] = mapped_column(JSONB)
+    classification: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # Metadata (SDK: FolderFullMetadataField) - arbitrary key-value pairs
     # Named box_metadata to avoid conflict with SQLAlchemy DeclarativeBase.metadata
-    box_metadata: Mapped[Optional[dict]] = mapped_column(JSONB)
+    box_metadata: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # Relationships
     parent: Mapped[Optional["Folder"]] = relationship(
@@ -609,26 +609,26 @@ class File(Base):
 
     # Lock (SDK: FileFullLockField) - stored as JSONB
     # Fields: id, type, created_by, created_at, expired_at, is_download_prevented, app_type
-    lock: Mapped[Optional[dict]] = mapped_column(JSONB)
+    lock: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # Tags (stored as JSONB array)
-    tags: Mapped[Optional[list]] = mapped_column(JSONB, default=list)
+    tags: Mapped[Optional[list]] = mapped_column(JSON, default=list)
 
     # Collections (stored as JSONB array of collection IDs)
     # Used for favorites - array of {"id": collection_id} or just collection_id strings
-    collections: Mapped[Optional[list]] = mapped_column(JSONB, default=list)
+    collections: Mapped[Optional[list]] = mapped_column(JSON, default=list)
 
     # Shared link (SDK: FileSharedLinkField)
     # Stored as JSONB with fields: url, effective_access, effective_permission, is_password_enabled,
     # download_count, preview_count, download_url, vanity_url, vanity_name, access, unshared_at, permissions
-    shared_link: Mapped[Optional[dict]] = mapped_column(JSONB)
+    shared_link: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # === FileFull additional fields (SDK: FileFull) ===
     # Permissions (SDK: FileFullPermissionsField)
     # JSONB: {can_delete, can_download, can_invite_collaborator, can_rename, can_set_share_access,
     #         can_share, can_annotate, can_comment, can_preview, can_upload,
     #         can_view_annotations_all, can_view_annotations_self}
-    permissions: Mapped[Optional[dict]] = mapped_column(JSONB)
+    permissions: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # Boolean flags
     is_package: Mapped[Optional[bool]] = mapped_column(Boolean)
@@ -638,30 +638,30 @@ class File(Base):
     is_associated_with_app_item: Mapped[Optional[bool]] = mapped_column(Boolean)
 
     # Allowed invitee roles (JSONB array)
-    allowed_invitee_roles: Mapped[Optional[list]] = mapped_column(JSONB)
+    allowed_invitee_roles: Mapped[Optional[list]] = mapped_column(JSON)
 
     # Shared link permission options (JSONB array): ['can_preview', 'can_download', 'can_edit']
-    shared_link_permission_options: Mapped[Optional[list]] = mapped_column(JSONB)
+    shared_link_permission_options: Mapped[Optional[list]] = mapped_column(JSON)
 
     # Expiring embed link (SDK: FileFullExpiringEmbedLinkField)
     # JSONB: {access_token, expires_in, token_type, restricted_to, url}
-    expiring_embed_link: Mapped[Optional[dict]] = mapped_column(JSONB)
+    expiring_embed_link: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # Watermark info (SDK: FileFullWatermarkInfoField)
     # JSONB: {is_watermarked: bool}
-    watermark_info: Mapped[Optional[dict]] = mapped_column(JSONB)
+    watermark_info: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # Metadata (SDK: FileFullMetadataField) - arbitrary key-value pairs
     # Named box_metadata to avoid conflict with SQLAlchemy DeclarativeBase.metadata
-    box_metadata: Mapped[Optional[dict]] = mapped_column(JSONB)
+    box_metadata: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # Representations (SDK: FileFullRepresentationsField)
     # JSONB: {entries: [{content, info, properties, representation, status}]}
-    representations: Mapped[Optional[dict]] = mapped_column(JSONB)
+    representations: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # Classification (SDK: FileFullClassificationField)
     # JSONB: {name, definition, color}
-    classification: Mapped[Optional[dict]] = mapped_column(JSONB)
+    classification: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # Uploader display name
     uploader_display_name: Mapped[Optional[str]] = mapped_column(String(255))

@@ -15,10 +15,10 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from starlette.testclient import TestClient
 
-from src.platform.isolationEngine.session import SessionManager
-from src.platform.isolationEngine.environment import EnvironmentHandler
-from src.platform.isolationEngine.core import CoreIsolationEngine
-from src.platform.evaluationEngine.core import CoreEvaluationEngine
+from src.eval_platform.isolationEngine.session import SessionManager
+from src.eval_platform.isolationEngine.environment import EnvironmentHandler
+from src.eval_platform.isolationEngine.core import CoreIsolationEngine
+from src.eval_platform.evaluationEngine.core import CoreEvaluationEngine
 
 
 env_path = Path(__file__).parent.parent / ".env"
@@ -61,7 +61,7 @@ def environment_handler(session_manager):
 @pytest.fixture(scope="session")
 def pool_manager(session_manager):
     """PoolManager instance for tests."""
-    from src.platform.isolationEngine.pool import PoolManager
+    from src.eval_platform.isolationEngine.pool import PoolManager
     return PoolManager(session_manager)
 
 
@@ -84,7 +84,7 @@ def core_evaluation_engine(session_manager):
 @pytest.fixture(scope="function")
 def test_client(session_manager):
     """Starlette TestClient with full application."""
-    from src.platform.api.main import create_app
+    from src.eval_platform.api.main import create_app
 
     app = create_app()
     return TestClient(app)
@@ -182,7 +182,7 @@ async def slack_client_with_differ(
     from src.services.slack.api.methods import slack_endpoint
     from starlette.routing import Route
     from starlette.applications import Starlette
-    from src.platform.evaluationEngine.differ import Differ
+    from src.eval_platform.evaluationEngine.differ import Differ
 
     env_result = core_isolation_engine.create_environment(
         template_schema="slack_default",
@@ -230,7 +230,7 @@ async def slack_bench_client_with_differ(
     from src.services.slack.api.methods import slack_endpoint
     from starlette.routing import Route
     from starlette.applications import Starlette
-    from src.platform.evaluationEngine.differ import Differ
+    from src.eval_platform.evaluationEngine.differ import Differ
 
     env_result = core_isolation_engine.create_environment(
         template_schema="slack_bench_default",
@@ -335,7 +335,7 @@ def differ_env(
     test_user_id, core_isolation_engine, session_manager, environment_handler
 ):
     """Create isolated environment with Differ instance for testing."""
-    from src.platform.evaluationEngine.differ import Differ
+    from src.eval_platform.evaluationEngine.differ import Differ
 
     env = core_isolation_engine.create_environment(
         template_schema="slack_default",
@@ -379,7 +379,7 @@ def test_api_key(test_user_id):
 @pytest.fixture(scope="function")
 def cleanup_test_templates(session_manager, test_user_id):
     """Auto-cleanup fixture that removes templates created during tests."""
-    from src.platform.db.schema import TemplateEnvironment
+    from src.eval_platform.db.schema import TemplateEnvironment
 
     yield
 
@@ -394,7 +394,7 @@ def cleanup_test_templates(session_manager, test_user_id):
 @pytest.fixture(scope="function")
 def cleanup_test_suites(session_manager):
     """Auto-cleanup fixture that removes test suites and tests created during a test."""
-    from src.platform.db.schema import TestSuite, Test, TestMembership, TestRun
+    from src.eval_platform.db.schema import TestSuite, Test, TestMembership, TestRun
 
     with session_manager.with_meta_session() as s:
         baseline_suite_ids = {suite.id for suite in s.query(TestSuite.id).all()}
@@ -588,7 +588,7 @@ async def linear_client_with_differ(
     from ariadne import load_schema_from_path, make_executable_schema
     from src.services.linear.api.resolvers import bindables
     from starlette.applications import Starlette
-    from src.platform.evaluationEngine.differ import Differ
+    from src.eval_platform.evaluationEngine.differ import Differ
 
     env_result = core_isolation_engine.create_environment(
         template_schema="linear_default",

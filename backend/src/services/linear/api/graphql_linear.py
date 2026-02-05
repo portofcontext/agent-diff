@@ -1,6 +1,6 @@
 from ariadne.asgi import GraphQL
-from src.platform.isolationEngine.core import CoreIsolationEngine
-from src.platform.evaluationEngine.core import CoreEvaluationEngine
+from src.eval_platform.isolationEngine.core import CoreIsolationEngine
+from src.eval_platform.evaluationEngine.core import CoreEvaluationEngine
 from src.services.linear.database.schema import User
 
 

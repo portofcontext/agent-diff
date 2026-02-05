@@ -16,7 +16,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Index,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
 
@@ -154,7 +154,7 @@ class Calendar(Base):
     time_zone: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     etag: Mapped[str] = mapped_column(String(100), nullable=False)
     conference_properties: Mapped[Optional[dict[str, Any]]] = mapped_column(
-        JSONB, nullable=True
+        JSON, nullable=True
     )
     # Whether this calendar automatically accepts invitations (resource calendars only)
     auto_accept_invitations: Mapped[bool] = mapped_column(
@@ -241,10 +241,10 @@ class CalendarListEntry(Base):
 
     # Reminders and notifications
     default_reminders: Mapped[Optional[list[dict[str, Any]]]] = mapped_column(
-        JSONB, nullable=True
+        JSON, nullable=True
     )
     notification_settings: Mapped[Optional[dict[str, Any]]] = mapped_column(
-        JSONB, nullable=True
+        JSON, nullable=True
     )
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -322,8 +322,8 @@ class Event(Base):
     )
 
     # Date/Time - stored as JSON for flexibility (date vs dateTime vs timeZone)
-    start: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
-    end: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    start: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    end: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     # Denormalized datetime for indexing/querying
     start_datetime: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     end_datetime: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
@@ -336,10 +336,10 @@ class Event(Base):
     )
 
     # Recurrence
-    recurrence: Mapped[Optional[list[str]]] = mapped_column(JSONB, nullable=True)
+    recurrence: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
     recurring_event_id: Mapped[Optional[str]] = mapped_column(String(1024), nullable=True)
     original_start_time: Mapped[Optional[dict[str, Any]]] = mapped_column(
-        JSONB, nullable=True
+        JSON, nullable=True
     )
 
     # Visibility and transparency
@@ -392,27 +392,27 @@ class Event(Base):
     # Conferencing
     hangout_link: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     conference_data: Mapped[Optional[dict[str, Any]]] = mapped_column(
-        JSONB, nullable=True
+        JSON, nullable=True
     )
 
     # Attachments
     attachments: Mapped[Optional[list[dict[str, Any]]]] = mapped_column(
-        JSONB, nullable=True
+        JSON, nullable=True
     )
 
     # Extended properties
     extended_properties: Mapped[Optional[dict[str, Any]]] = mapped_column(
-        JSONB, nullable=True
+        JSON, nullable=True
     )
 
     # Source
-    source: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB, nullable=True)
+    source: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, nullable=True)
 
     # Gadget
-    gadget: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB, nullable=True)
+    gadget: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, nullable=True)
 
     # Reminders (event-specific override)
-    reminders: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB, nullable=True)
+    reminders: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, nullable=True)
 
     # Event type and related properties
     event_type: Mapped[EventType] = mapped_column(
@@ -420,16 +420,16 @@ class Event(Base):
         default=EventType.default,
     )
     working_location_properties: Mapped[Optional[dict[str, Any]]] = mapped_column(
-        JSONB, nullable=True
+        JSON, nullable=True
     )
     out_of_office_properties: Mapped[Optional[dict[str, Any]]] = mapped_column(
-        JSONB, nullable=True
+        JSON, nullable=True
     )
     focus_time_properties: Mapped[Optional[dict[str, Any]]] = mapped_column(
-        JSONB, nullable=True
+        JSON, nullable=True
     )
     birthday_properties: Mapped[Optional[dict[str, Any]]] = mapped_column(
-        JSONB, nullable=True
+        JSON, nullable=True
     )
 
     # Timestamps
@@ -634,7 +634,7 @@ class Channel(Base):
         BigInteger, nullable=True
     )  # Unix timestamp ms (requires BigInteger for ms since epoch)
     token: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    params: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB, nullable=True)
+    params: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, nullable=True)
     # Whether payload is wanted for notifications
     payload: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     # User who created the channel (for ownership validation)

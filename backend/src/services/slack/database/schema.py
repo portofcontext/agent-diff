@@ -12,7 +12,7 @@ from sqlalchemy import (
     Enum,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
 
@@ -115,7 +115,7 @@ class Message(Base):
     message_text: Mapped[str | None] = mapped_column(Text)
     type: Mapped[str | None] = mapped_column(String(50), default="message")
     ts: Mapped[str | None] = mapped_column(String(50))
-    blocks: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    blocks: Mapped[list | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.now)
 
     channel: Mapped["Channel"] = relationship(back_populates="messages")
