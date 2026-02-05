@@ -277,11 +277,6 @@ cd backend
 DATABASE_URL=sqlite:///dummy.db PYTHONPATH=src uv run pytest tests/test_sqlite_integration.py tests/test_calendar_sqlite_integration.py tests/test_slack_sqlite_integration.py -v
 ```
 
-**Test Results:**
-- ✅ Box: 5/5 passing
-- ✅ Calendar: 6/6 passing
-- ✅ Slack: 5/5 passing
-- ✅ Linear: 80+ operations implemented
 
 ## Documentation
 
@@ -302,16 +297,3 @@ DATABASE_URL=sqlite:///dummy.db PYTHONPATH=src uv run pytest tests/test_sqlite_i
 - Supports both PostgreSQL and SQLite
 - Schema isolation for parallel testing
 
-## Key Features
-
-✅ **Typed Operations** - Type-safe CRUD with clear signatures
-✅ **Pydantic Serialization** - All models support `.model_dump()`
-✅ **AI Agent Ready** - Designed as tool interfaces
-✅ **State Tracking** - Automatic diff capture
-✅ **Database Agnostic** - PostgreSQL and SQLite support
-✅ **Entity Defaults** - Handle complex schemas (Linear: 102 fields)
-✅ **Test Coverage** - 16/16 tests passing
-
-## License
-
-MIT
