@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "diff-the-universe"
 version = "0.1.0"
@@ -24,6 +28,12 @@ dependencies = [
     "starlette>=0.48.0",
     "uvicorn>=0.37.0",
 ]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
 
 [tool.pytest.ini_options]
 addopts = ["--tb=short"]

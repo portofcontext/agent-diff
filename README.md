@@ -21,6 +21,19 @@ dependencies = [
 ]
 ```
 
+**Note:** Imports work directly - no `sys.path` manipulation needed!
+
+```python
+# ✅ Just works after installation
+from eval_platform.eval_utilities import EvalEnvironment
+```
+
+To verify your installation:
+
+```bash
+python -m verify_install
+```
+
 ## Quick Start
 
 ### New Clean API (Recommended)

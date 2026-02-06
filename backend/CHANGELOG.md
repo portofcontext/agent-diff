@@ -4,6 +4,25 @@
 
 ### Fixed
 
+#### Package Installation - No More sys.path Hacks Required!
+
+**Problem:** Users had to manually add the package to `sys.path`:
+```python
+# ❌ Users had to do this
+diff_universe_src = Path(__file__).parent.parent / "agent-diff" / "backend" / "src"
+sys.path.insert(0, str(diff_universe_src))
+```
+
+**Solution:** Added proper package configuration to `pyproject.toml`:
+- Added `[build-system]` section
+- Added `[tool.setuptools.packages.find]` with `where = ["src"]`
+
+**Result:** Users can now import directly after installation:
+```python
+# ✅ Just works after install
+from eval_platform.eval_utilities import EvalEnvironment
+```
+
 #### Import Issues (Breaking when installed as package)
 
 **Problem:** All imports used `from src.` prefix, which broke when the package was installed via pip/uv.
