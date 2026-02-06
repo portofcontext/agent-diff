@@ -37,3 +37,8 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 addopts = ["--tb=short"]
+
+[dependency-groups]
+dev = [
+    "pctx-client>=0.2.1",
+]

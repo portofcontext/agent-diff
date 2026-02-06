@@ -25,26 +25,25 @@ from __future__ import annotations
 import tempfile
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Dict, List, Literal, Optional, Type
 from pathlib import Path
+from typing import Any, Dict, List, Literal, Optional, Type
 
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session, sessionmaker
+
+from eval_platform.eval_utilities import create_snapshot, delete_snapshot
+from eval_platform.evaluationEngine.models import DiffResult
+from services.box.database.schema import Base as BoxBase
 
 # Import service operations
 from services.box.database.typed_operations import BoxOperations
-from services.box.database.schema import Base as BoxBase, User as BoxUser, Folder as BoxFolder
-from services.calendar.database.typed_operations import CalendarOperations
 from services.calendar.database.schema import Base as CalendarBase
-from services.slack.database.typed_operations import SlackOperations
-from services.slack.database.schema import Base as SlackBase
-from services.linear.database.typed_operations import LinearOperations
+from services.calendar.database.typed_operations import CalendarOperations
 from services.linear.database.schema import Base as LinearBase
-
-from eval_platform.eval_utilities import create_snapshot, delete_snapshot, get_diff
-from eval_platform.evaluationEngine.models import DiffResult
-
+from services.linear.database.typed_operations import LinearOperations
+from services.slack.database.schema import Base as SlackBase
+from services.slack.database.typed_operations import SlackOperations
 
 ServiceType = Literal["box", "calendar", "slack", "linear"]
 
@@ -52,12 +51,13 @@ ServiceType = Literal["box", "calendar", "slack", "linear"]
 @dataclass
 class ChangeRecord:
     """Typed record of a database change."""
+
     table: str
     data: Dict[str, Any]
 
     def __getattr__(self, name: str) -> Any:
         """Allow accessing data fields as attributes."""
-        if name in ('table', 'data'):
+        if name in ("table", "data"):
             return object.__getattribute__(self, name)
         return self.data.get(name)
 
@@ -74,9 +74,15 @@ class DiffTracker:
 
     def __init__(self, diff: DiffResult):
         self._diff = diff
-        self._created = [ChangeRecord(table=r['__table__'], data=r) for r in diff.inserts]
-        self._updated = [ChangeRecord(table=r['__table__'], data=r['after']) for r in diff.updates]
-        self._deleted = [ChangeRecord(table=r['__table__'], data=r) for r in diff.deletes]
+        self._created = [
+            ChangeRecord(table=r["__table__"], data=r) for r in diff.inserts
+        ]
+        self._updated = [
+            ChangeRecord(table=r["__table__"], data=r["after"]) for r in diff.updates
+        ]
+        self._deleted = [
+            ChangeRecord(table=r["__table__"], data=r) for r in diff.deletes
+        ]
 
     @property
     def created(self) -> List[ChangeRecord]:
@@ -120,7 +126,9 @@ class DiffTracker:
             actual = len([r for r in self._created if r.table == table])
             assert actual == count, f"Expected {count} inserts in {table}, got {actual}"
         else:
-            assert len(self._created) == count, f"Expected {count} inserts, got {len(self._created)}"
+            assert len(self._created) == count, (
+                f"Expected {count} inserts, got {len(self._created)}"
+            )
 
     def assert_updated(self, count: int, table: Optional[str] = None) -> None:
         """Assert the number of updated records."""
@@ -128,7 +136,9 @@ class DiffTracker:
             actual = len([r for r in self._updated if r.table == table])
             assert actual == count, f"Expected {count} updates in {table}, got {actual}"
         else:
-            assert len(self._updated) == count, f"Expected {count} updates, got {len(self._updated)}"
+            assert len(self._updated) == count, (
+                f"Expected {count} updates, got {len(self._updated)}"
+            )
 
     def assert_deleted(self, count: int, table: Optional[str] = None) -> None:
         """Assert the number of deleted records."""
@@ -136,7 +146,9 @@ class DiffTracker:
             actual = len([r for r in self._deleted if r.table == table])
             assert actual == count, f"Expected {count} deletes in {table}, got {actual}"
         else:
-            assert len(self._deleted) == count, f"Expected {count} deletes, got {len(self._deleted)}"
+            assert len(self._deleted) == count, (
+                f"Expected {count} deletes, got {len(self._deleted)}"
+            )
 
     def created_folder(self, name: str) -> bool:
         """Check if a folder with the given name was created."""
@@ -152,8 +164,7 @@ class DiffTracker:
     def created_file(self, name: str) -> bool:
         """Check if a file with the given name was created."""
         return any(
-            r.table == "box_files" and r.data.get("name") == name
-            for r in self._created
+            r.table == "box_files" and r.data.get("name") == name for r in self._created
         )
 
     def assert_created_file(self, name: str) -> None:
@@ -203,7 +214,7 @@ class EvalEnvironment:
         *,
         database_url: Optional[str] = None,
         seed_users: int = 1,
-        cleanup: bool = True
+        cleanup: bool = True,
     ):
         """
         Initialize an evaluation environment.
@@ -357,18 +368,19 @@ class EvalEnvironment:
         # Create default user
         if self.seed_users >= 1:
             self.default_user = self.ops.create_user(
-                name="Test User",
-                login="test@example.com",
-                job_title="Tester"
+                name="Test User", login="test@example.com", job_title="Tester"
             )
 
         # Create root folder (special case for Box)
         # Use raw SQL to avoid field validation issues
         from sqlalchemy import text
-        self.session.execute(text("""
+
+        self.session.execute(
+            text("""
             INSERT INTO box_folders (id, type, name, parent_id, item_status, size)
             VALUES ('0', 'folder', 'All Files', '0', 'active', 0)
-        """))
+        """)
+        )
         self.session.commit()
 
     def _seed_calendar_defaults(self) -> None:
@@ -376,27 +388,22 @@ class EvalEnvironment:
         if self.seed_users >= 1:
             # Calendar operations have create_user if needed
             # For now, store in a simple way
-            self.default_user = type('User', (), {
-                'user_id': 'default-user',
-                'email': 'test@example.com'
-            })()
+            self.default_user = type(
+                "User", (), {"user_id": "default-user", "email": "test@example.com"}
+            )()
 
     def _seed_slack_defaults(self) -> None:
         """Seed default Slack data."""
         if self.seed_users >= 1:
             # Create default team first
-            team = self.ops.create_team(
-                name="Test Team",
-                domain="test"
-            )
+            self.ops.create_team(team_name="Test Team")
 
             # Create default user
             self.default_user = self.ops.create_user(
                 user_id="U001",
-                team_id=team.team_id,
-                name="Test User",
+                username="Test-User",
                 real_name="Test User",
-                email="test@example.com"
+                email="test@example.com",
             )
 
     def _seed_linear_defaults(self) -> None:
@@ -407,9 +414,7 @@ class EvalEnvironment:
 
             # Create default user
             self.default_user = self.ops.create_user(
-                email="test@example.com",
-                name="Test User",
-                organizationId=org.id
+                email="test@example.com", name="Test User", organizationId=org.id
             )
 
     def _get_simple_diff(self, before_suffix: str, after_suffix: str) -> DiffResult:
@@ -424,12 +429,14 @@ class EvalEnvironment:
             DiffResult with inserts, updates, and deletes
         """
         # Get all tables
-        result = self.session.execute(text("""
+        result = self.session.execute(
+            text("""
             SELECT name FROM sqlite_master
             WHERE type='table'
             AND name NOT LIKE 'sqlite_%'
             AND name NOT LIKE '%_snapshot_%'
-        """))
+        """)
+        )
         tables = [row[0] for row in result]
 
         inserts = []
@@ -441,18 +448,23 @@ class EvalEnvironment:
             after_table = f"{table}_snapshot_{after_suffix}"
 
             # Check if snapshot tables exist
-            check_result = self.session.execute(text(f"""
+            check_result = self.session.execute(
+                text(f"""
                 SELECT name FROM sqlite_master
                 WHERE type='table'
                 AND name IN ('{before_table}', '{after_table}')
-            """))
+            """)
+            )
             existing_tables = [row[0] for row in check_result]
 
-            if before_table not in existing_tables or after_table not in existing_tables:
+            if (
+                before_table not in existing_tables
+                or after_table not in existing_tables
+            ):
                 continue
 
             # Get primary key column (assume 'id' for simplicity)
-            pk_col = 'id'
+            pk_col = "id"
 
             # Find inserts (rows in after but not in before)
             insert_query = text(f"""
@@ -463,7 +475,7 @@ class EvalEnvironment:
             columns = list(insert_results.keys())
             for row in insert_results:
                 row_dict = dict(zip(columns, row))
-                row_dict['__table__'] = table
+                row_dict["__table__"] = table
                 inserts.append(row_dict)
 
             # Find deletes (rows in before but not in after)
@@ -475,7 +487,7 @@ class EvalEnvironment:
             columns = list(delete_results.keys())
             for row in delete_results:
                 row_dict = dict(zip(columns, row))
-                row_dict['__table__'] = table
+                row_dict["__table__"] = table
                 deletes.append(row_dict)
 
             # Find updates (rows with same ID but different values)
@@ -498,13 +510,15 @@ class EvalEnvironment:
 
                     # Check if anything changed (ignoring __table__)
                     if after_dict != before_dict:
-                        after_dict['__table__'] = table
-                        before_dict['__table__'] = table
-                        updates.append({
-                            '__table__': table,
-                            'after': after_dict,
-                            'before': before_dict
-                        })
+                        after_dict["__table__"] = table
+                        before_dict["__table__"] = table
+                        updates.append(
+                            {
+                                "__table__": table,
+                                "after": after_dict,
+                                "before": before_dict,
+                            }
+                        )
             except Exception:
                 # Skip updates if there's an issue with the query
                 pass

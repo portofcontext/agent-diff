@@ -5,17 +5,17 @@ This module provides a class-based API for Calendar operations, encapsulating
 session management for easier use by AI agents.
 """
 
-from typing import Optional, Any
-from datetime import datetime
+from typing import Any, Optional
+
 from sqlalchemy.orm import Session
 
 from . import operations as ops
 from .schema import (
-    User,
+    AccessRole,
     Calendar,
     CalendarListEntry,
     Event,
-    AccessRole,
+    User,
 )
 
 
@@ -489,19 +489,19 @@ class CalendarOperations:
         """
         update_data = {}
         if summary is not None:
-            update_data['summary'] = summary
+            update_data["summary"] = summary
         if description is not None:
-            update_data['description'] = description
+            update_data["description"] = description
         if location is not None:
-            update_data['location'] = location
+            update_data["location"] = location
         if start is not None:
-            update_data['start'] = start
+            update_data["start"] = start
         if end is not None:
-            update_data['end'] = end
+            update_data["end"] = end
         if attendees is not None:
-            update_data['attendees'] = attendees
+            update_data["attendees"] = attendees
         if recurrence is not None:
-            update_data['recurrence'] = recurrence
+            update_data["recurrence"] = recurrence
         update_data.update(kwargs)
 
         return ops.update_event(

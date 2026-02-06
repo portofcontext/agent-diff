@@ -12,42 +12,42 @@ operations for testing and simple use cases. For full GraphQL functionality, use
 resolvers directly.
 """
 
-from typing import Optional, Any
 from datetime import datetime
-from sqlalchemy.orm import Session
-from sqlalchemy import select
+from typing import Any, Optional
 
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from .entity_defaults import (
+    attachment_defaults,
+    comment_defaults,
+    cycle_defaults,
+    document_defaults,
+    initiative_defaults,
+    issue_defaults,
+    issue_label_defaults,
+    organization_defaults,
+    project_defaults,
+    project_milestone_defaults,
+    team_defaults,
+    user_defaults,
+    workflow_state_defaults,
+)
 from .schema import (
-    User,
-    Team,
-    Organization,
-    Issue,
-    Comment,
-    WorkflowState,
-    Project,
-    ProjectMilestone,
-    ProjectStatus,
-    Cycle,
-    Initiative,
-    Document,
     Attachment,
+    Comment,
+    Cycle,
+    Document,
+    Initiative,
+    Issue,
     IssueLabel,
     IssueRelation,
-)
-from .entity_defaults import (
-    organization_defaults,
-    user_defaults,
-    team_defaults,
-    issue_defaults,
-    project_defaults,
-    comment_defaults,
-    workflow_state_defaults,
-    cycle_defaults,
-    initiative_defaults,
-    document_defaults,
-    attachment_defaults,
-    project_milestone_defaults,
-    issue_label_defaults,
+    Organization,
+    Project,
+    ProjectMilestone,
+    Team,
+    User,
+    WorkflowState,
 )
 
 
@@ -98,11 +98,7 @@ class LinearOperations:
     # ========================================================================
 
     def create_organization(
-        self,
-        name: str,
-        *,
-        url_key: Optional[str] = None,
-        **kwargs: Any
+        self, name: str, *, url_key: Optional[str] = None, **kwargs: Any
     ) -> Organization:
         """
         Create a new organization.
@@ -144,7 +140,7 @@ class LinearOperations:
         *,
         display_name: Optional[str] = None,
         admin: bool = False,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> User:
         """
         Create a new user.
@@ -205,7 +201,7 @@ class LinearOperations:
         organization_id: str,
         *,
         description: Optional[str] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Team:
         """
         Create a new team.
@@ -253,7 +249,7 @@ class LinearOperations:
         *,
         color: str = "#000000",
         type: str = "unstarted",
-        **kwargs: Any
+        **kwargs: Any,
     ) -> WorkflowState:
         """
         Create a new workflow state.
@@ -301,7 +297,7 @@ class LinearOperations:
         state_id: Optional[str] = None,
         assignee_id: Optional[str] = None,
         creator_id: Optional[str] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Issue:
         """
         Create a new issue.
@@ -413,12 +409,7 @@ class LinearOperations:
     # ========================================================================
 
     def create_comment(
-        self,
-        issue_id: str,
-        body: str,
-        *,
-        user_id: Optional[str] = None,
-        **kwargs: Any
+        self, issue_id: str, body: str, *, user_id: Optional[str] = None, **kwargs: Any
     ) -> Comment:
         """
         Create a new comment on an issue.
@@ -508,7 +499,7 @@ class LinearOperations:
         team_ids: Optional[list[str]] = None,
         lead_id: Optional[str] = None,
         target_date: Optional[datetime] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Project:
         """
         Create a new project.
@@ -559,7 +550,7 @@ class LinearOperations:
         name: Optional[str] = None,
         description: Optional[str] = None,
         target_date: Optional[datetime] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Optional[Project]:
         """
         Update a project.
@@ -612,10 +603,7 @@ class LinearOperations:
         return True
 
     def list_projects(
-        self,
-        *,
-        team_id: Optional[str] = None,
-        limit: int = 100
+        self, *, team_id: Optional[str] = None, limit: int = 100
     ) -> list[Project]:
         """
         List projects.
@@ -641,7 +629,7 @@ class LinearOperations:
         project_id: str,
         *,
         target_date: Optional[datetime] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> ProjectMilestone:
         """
         Create a new project milestone.
@@ -738,7 +726,7 @@ class LinearOperations:
         ends_at: datetime,
         *,
         name: Optional[str] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Cycle:
         """
         Create a new cycle.
@@ -839,7 +827,7 @@ class LinearOperations:
         *,
         description: Optional[str] = None,
         target_date: Optional[datetime] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Initiative:
         """
         Create a new initiative.
@@ -935,11 +923,7 @@ class LinearOperations:
     # ========================================================================
 
     def create_document(
-        self,
-        title: str,
-        *,
-        content: Optional[str] = None,
-        **kwargs: Any
+        self, title: str, *, content: Optional[str] = None, **kwargs: Any
     ) -> Document:
         """
         Create a new document.
@@ -1028,12 +1012,7 @@ class LinearOperations:
     # ========================================================================
 
     def create_attachment(
-        self,
-        title: str,
-        url: str,
-        *,
-        issue_id: Optional[str] = None,
-        **kwargs: Any
+        self, title: str, url: str, *, issue_id: Optional[str] = None, **kwargs: Any
     ) -> Attachment:
         """
         Create a new attachment.
@@ -1097,7 +1076,7 @@ class LinearOperations:
         *,
         color: Optional[str] = None,
         team_id: Optional[str] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> IssueLabel:
         """
         Create a new issue label.
@@ -1260,7 +1239,7 @@ class LinearOperations:
             List of IssueRelation models
         """
         stmt = select(IssueRelation).where(
-            (IssueRelation.issueId == issue_id) |
-            (IssueRelation.relatedIssueId == issue_id)
+            (IssueRelation.issueId == issue_id)
+            | (IssueRelation.relatedIssueId == issue_id)
         )
         return list(self.session.execute(stmt).scalars())

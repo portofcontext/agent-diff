@@ -5,18 +5,19 @@ This module provides a class-based API for Slack operations, encapsulating
 session management for easier use by AI agents.
 """
 
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
 from sqlalchemy.orm import Session
 
 from . import operations as ops
 from .schema import (
-    User,
-    Team,
     Channel,
-    Message,
     ChannelMember,
+    Message,
     MessageReaction,
+    Team,
+    User,
 )
 
 

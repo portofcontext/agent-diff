@@ -28,12 +28,13 @@ Usage:
     # - .model_json_schema() - get JSON schema
 """
 
-from typing import Optional, Literal, List
+from typing import List, Literal, Optional
+
 from sqlalchemy.orm import Session
 
 # Import existing operations - we're wrapping these
 from . import operations as ops
-from .schema import User, Folder, File, FileVersion, Comment
+from .schema import Comment, File, FileVersion, Folder, User
 
 
 class BoxOperations:
@@ -230,13 +231,13 @@ class BoxOperations:
         Raises:
             BoxAPIError: If folder not found or validation fails
         """
-        update_data = {'user_id': user_id}
+        update_data = {"user_id": user_id}
         if name is not None:
-            update_data['name'] = name
+            update_data["name"] = name
         if description is not None:
-            update_data['description'] = description
+            update_data["description"] = description
         if parent_id is not None:
-            update_data['parent_id'] = parent_id
+            update_data["parent_id"] = parent_id
 
         return ops.update_folder(self.session, folder_id, **update_data)
 
@@ -261,7 +262,7 @@ class BoxOperations:
         offset: int = 0,
         sort: Optional[str] = None,
         direction: Literal["ASC", "DESC"] = "ASC",
-        fields: Optional[List[str]] = None
+        fields: Optional[List[str]] = None,
     ) -> dict:
         """
         List items in a folder (files and subfolders).
@@ -290,7 +291,7 @@ class BoxOperations:
             offset=offset,
             sort=sort,
             direction=direction,
-            fields=fields
+            fields=fields,
         )
 
     # ==========================================================================
@@ -347,7 +348,7 @@ class BoxOperations:
         # Note: underlying create_file doesn't accept size parameter
         # content is required, so provide empty bytes if None
         if content is None:
-            content = b''
+            content = b""
 
         return ops.create_file(
             self.session,
@@ -381,11 +382,11 @@ class BoxOperations:
         """
         update_data = {}
         if name is not None:
-            update_data['name'] = name
+            update_data["name"] = name
         if description is not None:
-            update_data['description'] = description
+            update_data["description"] = description
         if parent_id is not None:
-            update_data['parent_id'] = parent_id
+            update_data["parent_id"] = parent_id
 
         return ops.update_file(self.session, file_id, **update_data)
 
@@ -402,11 +403,7 @@ class BoxOperations:
         ops.delete_file(self.session, file_id)
 
     def upload_file_version(
-        self,
-        file_id: str,
-        *,
-        content: bytes,
-        size: Optional[int] = None
+        self, file_id: str, *, content: bytes, size: Optional[int] = None
     ) -> FileVersion:
         """
         Upload a new version of an existing file.
@@ -427,10 +424,7 @@ class BoxOperations:
             print(version.model_dump())
         """
         return ops.upload_file_version(
-            self.session,
-            file_id=file_id,
-            content=content,
-            size=size
+            self.session, file_id=file_id, content=content, size=size
         )
 
     # ==========================================================================
@@ -488,12 +482,7 @@ class BoxOperations:
         """
         return ops.get_comment_by_id(self.session, comment_id)
 
-    def update_comment(
-        self,
-        comment_id: str,
-        *,
-        message: str
-    ) -> Comment:
+    def update_comment(self, comment_id: str, *, message: str) -> Comment:
         """
         Update a comment's message.
 
@@ -526,7 +515,7 @@ class BoxOperations:
         limit: int = 30,
         offset: int = 0,
         content_types: Optional[List[str]] = None,
-        ancestor_folder_ids: Optional[List[str]] = None
+        ancestor_folder_ids: Optional[List[str]] = None,
     ) -> dict:
         """
         Search for files and folders by name/content.
@@ -552,5 +541,5 @@ class BoxOperations:
             limit=limit,
             offset=offset,
             content_types=content_types,
-            ancestor_folder_ids=ancestor_folder_ids
+            ancestor_folder_ids=ancestor_folder_ids,
         )
