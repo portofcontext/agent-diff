@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from src.eval_platform.api.models import (
+from eval_platform.api.models import (
     TestItem,
     CreateTestsRequest,
 )
-from src.eval_platform.api.auth import require_resource_access
-from src.eval_platform.db.schema import (
+from eval_platform.api.auth import require_resource_access
+from eval_platform.db.schema import (
     RunTimeEnvironment,
     TestRun,
 )

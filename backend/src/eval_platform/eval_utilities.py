@@ -49,6 +49,33 @@ from eval_platform.evaluationEngine.differ import Differ
 from eval_platform.evaluationEngine.models import DiffResult
 from eval_platform.isolationEngine.session import SessionManager
 
+# Export new clean API (import at end to avoid circular dependencies)
+__all__ = [
+    # New clean API
+    'EvalEnvironment',
+    'DiffTracker',
+    'ChangeRecord',
+    'setup_eval',
+    # Legacy API
+    'EnvironmentInfo',
+    'SnapshotInfo',
+    'SeedResult',
+    'create_environment',
+    'clear_environment',
+    'delete_environment',
+    'create_snapshot',
+    'delete_snapshot',
+    'get_diff',
+    'get_inserts_only',
+    'get_updates_only',
+    'get_deletes_only',
+    'seed_box_baseline',
+    'seed_calendar_baseline',
+    'seed_slack_baseline',
+    'seed_linear_baseline',
+    'EvalContext',
+]
+
 
 # ==============================================================================
 # DATA CLASSES FOR TYPED RETURNS
@@ -629,3 +656,22 @@ class EvalContext:
     def deletes(self) -> List[Dict[str, Any]]:
         """Convenience property for getting deletes."""
         return self.get_diff().deletes
+
+
+# ==============================================================================
+# NEW CLEAN API IMPORTS (at end to avoid circular dependencies)
+# ==============================================================================
+
+try:
+    from eval_platform.eval_environment import (
+        EvalEnvironment,
+        DiffTracker,
+        ChangeRecord,
+        setup_eval
+    )
+except ImportError:
+    # If eval_environment can't be imported, stub them out
+    EvalEnvironment = None  # type: ignore
+    DiffTracker = None  # type: ignore
+    ChangeRecord = None  # type: ignore
+    setup_eval = None  # type: ignore

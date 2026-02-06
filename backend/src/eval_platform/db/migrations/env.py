@@ -5,9 +5,9 @@ from alembic import context
 from dotenv import load_dotenv
 from sqlalchemy import engine_from_config, pool
 
-from src.eval_platform.db.schema import PlatformBase
-from src.services.slack.database.base import Base as SlackBase
-from src.services.calendar.database.base import Base as CalendarBase
+from eval_platform.db.schema import PlatformBase
+from services.slack.database.base import Base as SlackBase
+from services.calendar.database.base import Base as CalendarBase
 
 # Load .env file if available (not needed in Docker where env vars are passed directly)
 try:

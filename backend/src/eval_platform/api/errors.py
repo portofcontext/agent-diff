@@ -6,7 +6,7 @@ from starlette import status
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from src.eval_platform.api.models import APIError
+from eval_platform.api.models import APIError
 
 T = TypeVar("T", bound=BaseModel)
 

@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from src.eval_platform.db.schema import RunTimeEnvironment
+from eval_platform.db.schema import RunTimeEnvironment
 
 
 class SessionManager:

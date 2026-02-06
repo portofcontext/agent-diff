@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import MetaData, text
 
-from src.eval_platform.db.schema import RunTimeEnvironment, TemplateEnvironment
+from eval_platform.db.schema import RunTimeEnvironment, TemplateEnvironment
 
 from .session import SessionManager
 

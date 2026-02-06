@@ -5,9 +5,9 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
-from src.eval_platform.api.auth import check_template_access, require_resource_access
-from src.eval_platform.api.models import InitEnvRequestBody
-from src.eval_platform.db.schema import (
+from eval_platform.api.auth import check_template_access, require_resource_access
+from eval_platform.api.models import InitEnvRequestBody
+from eval_platform.db.schema import (
     TemplateEnvironment,
     Test,
     TestSuite,

@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Mapping
 from uuid import uuid4
 
-from src.eval_platform.db.schema import RunTimeEnvironment
+from eval_platform.db.schema import RunTimeEnvironment
 
 if TYPE_CHECKING:
     from src.eval_platform.evaluationEngine.replication import LogicalReplicationService

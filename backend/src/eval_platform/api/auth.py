@@ -7,7 +7,7 @@ from typing import Optional
 
 import httpx
 
-from src.eval_platform.db.schema import TemplateEnvironment
+from eval_platform.db.schema import TemplateEnvironment
 
 logger = logging.getLogger(__name__)
 

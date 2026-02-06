@@ -344,13 +344,17 @@ class BoxOperations:
             )
             file_info = file.model_dump()
         """
+        # Note: underlying create_file doesn't accept size parameter
+        # content is required, so provide empty bytes if None
+        if content is None:
+            content = b''
+
         return ops.create_file(
             self.session,
             name=name,
             parent_id=parent_id,
             user_id=user_id,
             content=content,
-            size=size,
             file_id=file_id,
             description=description,
         )

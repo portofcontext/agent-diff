@@ -8,7 +8,7 @@ We run parity tests and most of the functions will match real schema but there m
 from ariadne import QueryType, MutationType, ObjectType, ScalarType
 from sqlalchemy.orm import Session, aliased
 from sqlalchemy import or_, and_, select, func, exists, not_
-from src.services.linear.database.schema import (
+from services.linear.database.schema import (
     Issue,
     Attachment,
     User,

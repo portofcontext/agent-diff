@@ -1,34 +1,34 @@
 from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
-from src.eval_platform.isolationEngine.session import SessionManager
+from eval_platform.isolationEngine.session import SessionManager
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from os import environ
-from src.eval_platform.isolationEngine.core import CoreIsolationEngine
-from src.eval_platform.evaluationEngine.core import CoreEvaluationEngine
-from src.eval_platform.evaluationEngine.replication import (
+from eval_platform.isolationEngine.core import CoreIsolationEngine
+from eval_platform.evaluationEngine.core import CoreEvaluationEngine
+from eval_platform.evaluationEngine.replication import (
     LogicalReplicationService,
     ReplicationConfig,
 )
-from src.eval_platform.isolationEngine.environment import EnvironmentHandler
-from src.eval_platform.isolationEngine.templateManager import TemplateManager
-from src.eval_platform.isolationEngine.maintenance import (
+from eval_platform.isolationEngine.environment import EnvironmentHandler
+from eval_platform.isolationEngine.templateManager import TemplateManager
+from eval_platform.isolationEngine.maintenance import (
     EnvironmentMaintenanceService,
     parse_pool_targets,
 )
-from src.eval_platform.testManager.core import CoreTestManager
+from eval_platform.testManager.core import CoreTestManager
 from starlette.routing import Router
-from src.eval_platform.api.routes import routes as platform_routes
-from src.eval_platform.api.middleware import IsolationMiddleware, PlatformMiddleware
-from src.services.slack.api.methods import routes as slack_routes
-from src.services.calendar.api import routes as calendar_routes
-from src.services.box.api.routes import routes as box_routes
-from src.eval_platform.logging_config import setup_logging
-from src.eval_platform.isolationEngine.pool import PoolManager
-from src.eval_platform.db.schema import TemplateEnvironment
+from eval_platform.api.routes import routes as platform_routes
+from eval_platform.api.middleware import IsolationMiddleware, PlatformMiddleware
+from services.slack.api.methods import routes as slack_routes
+from services.calendar.api import routes as calendar_routes
+from services.box.api.routes import routes as box_routes
+from eval_platform.logging_config import setup_logging
+from eval_platform.isolationEngine.pool import PoolManager
+from eval_platform.db.schema import TemplateEnvironment
 from ariadne import load_schema_from_path, make_executable_schema
-from src.services.linear.api.graphql_linear import LinearGraphQL
-from src.services.linear.api.resolvers import bindables
+from services.linear.api.graphql_linear import LinearGraphQL
+from services.linear.api.resolvers import bindables
 
 setup_logging()
 

@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.eval_platform.db.schema import EnvironmentPoolEntry
+from eval_platform.db.schema import EnvironmentPoolEntry
 
 from .session import SessionManager
 

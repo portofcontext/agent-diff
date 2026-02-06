@@ -3,7 +3,7 @@ from .session import SessionManager
 from .environment import EnvironmentHandler
 from .models import EnvironmentResponse
 from .models import TemplateCreateResult
-from src.eval_platform.db.schema import RunTimeEnvironment
+from eval_platform.db.schema import RunTimeEnvironment
 from uuid import uuid4
 from datetime import datetime, timedelta
 

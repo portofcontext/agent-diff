@@ -10,7 +10,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
-from src.eval_platform.api.models import (
+from eval_platform.api.models import (
     InitEnvRequestBody,
     InitEnvResponse,
     TestSuiteListResponse,
@@ -37,30 +37,30 @@ from src.eval_platform.api.models import (
     CreateTestsRequest,
     CreateTestsResponse,
 )
-from src.eval_platform.api.auth import (
+from eval_platform.api.auth import (
     require_resource_access,
     check_template_access,
 )
-from src.eval_platform.db.schema import (
+from eval_platform.db.schema import (
     Test,
     TestRun,
     RunTimeEnvironment,
     TemplateEnvironment,
 )
-from src.eval_platform.evaluationEngine.core import CoreEvaluationEngine
-from src.eval_platform.evaluationEngine.differ import Differ
-from src.eval_platform.evaluationEngine.models import DiffResult
-from src.eval_platform.isolationEngine.core import CoreIsolationEngine
-from src.eval_platform.testManager.core import CoreTestManager
-from src.eval_platform.isolationEngine.templateManager import TemplateManager
-from src.eval_platform.api.resolvers import (
+from eval_platform.evaluationEngine.core import CoreEvaluationEngine
+from eval_platform.evaluationEngine.differ import Differ
+from eval_platform.evaluationEngine.models import DiffResult
+from eval_platform.isolationEngine.core import CoreIsolationEngine
+from eval_platform.testManager.core import CoreTestManager
+from eval_platform.isolationEngine.templateManager import TemplateManager
+from eval_platform.api.resolvers import (
     require_environment_access,
     require_run_access,
     parse_uuid,
     resolve_and_validate_test_items,
     to_bulk_test_items,
 )
-from src.eval_platform.api.errors import (
+from eval_platform.api.errors import (
     bad_request,
     not_found,
     unauthorized,

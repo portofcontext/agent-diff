@@ -21,13 +21,13 @@ from starlette import status
 
 from sqlalchemy.orm import Session
 
-from src.services.box.database import operations as ops
-from src.services.box.database.operations import UNSET
-from src.services.box.utils import (
+from services.box.database import operations as ops
+from services.box.database.operations import UNSET
+from services.box.utils import (
     BoxErrorCode,
     generate_request_id,
 )
-from src.services.box.utils.errors import (
+from services.box.utils.errors import (
     BoxAPIError,
     ERROR_STATUS_MAP,
     bad_request_error,

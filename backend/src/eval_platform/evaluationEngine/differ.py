@@ -1,7 +1,7 @@
 from sqlalchemy import text, inspect
-from src.eval_platform.isolationEngine.session import SessionManager
+from eval_platform.isolationEngine.session import SessionManager
 from datetime import datetime
-from src.eval_platform.db.schema import Diff, SnapshotMetadata
+from eval_platform.db.schema import Diff, SnapshotMetadata
 from .models import DiffResult
 import logging
 import time

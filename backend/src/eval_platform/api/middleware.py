@@ -7,10 +7,10 @@ from starlette.requests import Request
 from starlette.responses import Response, JSONResponse
 from starlette import status
 
-from src.eval_platform.isolationEngine.session import SessionManager
-from src.eval_platform.isolationEngine.core import CoreIsolationEngine
-from src.eval_platform.api.auth import get_principal_id, is_dev_mode
-from src.eval_platform.db.schema import RunTimeEnvironment
+from eval_platform.isolationEngine.session import SessionManager
+from eval_platform.isolationEngine.core import CoreIsolationEngine
+from eval_platform.api.auth import get_principal_id, is_dev_mode
+from eval_platform.db.schema import RunTimeEnvironment
 
 logger = logging.getLogger(__name__)
 

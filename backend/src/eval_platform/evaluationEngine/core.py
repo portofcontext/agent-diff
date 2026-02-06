@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from typing import Any
 from typing_extensions import Literal
-from src.eval_platform.evaluationEngine.compiler import DSLCompiler
-from src.eval_platform.evaluationEngine.differ import Differ
-from src.eval_platform.evaluationEngine.assertion import AssertionEngine
-from src.eval_platform.evaluationEngine.models import DiffResult
-from src.eval_platform.isolationEngine.session import SessionManager
-from src.eval_platform.db.schema import ChangeJournal
+from eval_platform.evaluationEngine.compiler import DSLCompiler
+from eval_platform.evaluationEngine.differ import Differ
+from eval_platform.evaluationEngine.assertion import AssertionEngine
+from eval_platform.evaluationEngine.models import DiffResult
+from eval_platform.isolationEngine.session import SessionManager
+from eval_platform.db.schema import ChangeJournal
 from uuid import uuid4, UUID
 
 

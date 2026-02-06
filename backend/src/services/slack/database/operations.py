@@ -1,4 +1,4 @@
-from src.services.slack.database.schema import (
+from services.slack.database.schema import (
     User,
     Team,
     Channel,

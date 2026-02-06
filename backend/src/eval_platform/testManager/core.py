@@ -4,10 +4,10 @@ from uuid import uuid4
 
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
-from src.eval_platform.api.models import Visibility
-from src.eval_platform.api.auth import require_resource_access
-from src.eval_platform.db.schema import TestSuite, Test, TestMembership
-from src.eval_platform.evaluationEngine.compiler import DSLCompiler
+from eval_platform.api.models import Visibility
+from eval_platform.api.auth import require_resource_access
+from eval_platform.db.schema import TestSuite, Test, TestMembership
+from eval_platform.evaluationEngine.compiler import DSLCompiler
 
 
 logger = logging.getLogger(__name__)

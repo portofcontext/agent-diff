@@ -11,8 +11,8 @@ from uuid import UUID
 import psycopg  # type: ignore[import]
 from psycopg.rows import tuple_row  # type: ignore[import]
 
-from src.eval_platform.db.schema import ChangeJournal
-from src.eval_platform.isolationEngine.session import SessionManager
+from eval_platform.db.schema import ChangeJournal
+from eval_platform.isolationEngine.session import SessionManager
 
 logger = logging.getLogger(__name__)
 

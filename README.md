@@ -23,6 +23,39 @@ dependencies = [
 
 ## Quick Start
 
+### New Clean API (Recommended)
+
+```python
+from eval_platform.eval_utilities import EvalEnvironment
+
+# One-liner setup - everything handled automatically!
+with EvalEnvironment("box") as env:
+    with env.track_changes() as tracker:
+        # Agent does its thing
+        folder = env.ops.create_folder(
+            name="Reports",
+            parent_id="0",
+            user_id=env.default_user.user_id
+        )
+
+    # Simple, type-safe assertions
+    tracker.assert_created(1, table="box_folders")
+    assert tracker.created_folder("Reports")
+    assert tracker.created[0].name == "Reports"
+```
+
+**Lines of code:** ~10 lines vs ~40 lines with the old API
+
+**Key Benefits:**
+- ✅ Zero-config defaults - Works out of the box
+- ✅ Automatic state tracking - No manual snapshots needed
+- ✅ Type-safe results - No dict lookups, use proper objects
+- ✅ Clear boundaries - Setup vs test vs verification are explicit
+- ✅ Ergonomic assertions - One-liners for common checks
+- ✅ Service consistency - Same API across Box/Calendar/Slack/Linear
+
+### Legacy API (Still Supported)
+
 ```python
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -54,6 +87,121 @@ with EvalContext(session, "test_env") as ctx:
     assert len(ctx.inserts) == 2  # User and folder created
     assert ctx.inserts[0]['__table__'] == 'box_users'
     assert ctx.inserts[1]['__table__'] == 'box_folders'
+```
+
+## New Clean API Features
+
+### EvalEnvironment - One-Liner Setup
+
+The `EvalEnvironment` class provides automatic setup and cleanup:
+
+```python
+with EvalEnvironment("box") as env:
+    # Everything is ready:
+    # ✅ Database created (temp SQLite by default)
+    # ✅ Tables created
+    # ✅ Root folder exists (for Box)
+    # ✅ Default user created
+    # ✅ Operations class initialized
+
+    folder = env.ops.create_folder(
+        name="Reports",
+        parent_id="0",
+        user_id=env.default_user.user_id
+    )
+```
+
+**Automatic cleanup:** Database is automatically cleaned up when the context exits.
+
+### DiffTracker - Type-Safe Change Tracking
+
+Track changes with type-safe access and assertion helpers:
+
+```python
+with env.track_changes() as tracker:
+    # Perform operations
+    folder = env.ops.create_folder(name="Reports", ...)
+
+# Tracker is populated after the block exits
+print(f"Created {tracker.created_count} records")
+
+# Assertion helpers
+tracker.assert_created(1, table="box_folders")
+tracker.assert_created_folder("Reports")
+
+# Type-safe access (no dict lookups!)
+assert tracker.created[0].name == "Reports"
+assert tracker.created[0].table == "box_folders"
+
+# Access data as attributes
+folder_name = tracker.created[0].name  # Not tracker.created[0]['name']!
+```
+
+### Service-Agnostic API
+
+Works the same way for all services:
+
+```python
+# Box
+with EvalEnvironment("box") as env:
+    with env.track_changes() as tracker:
+        folder = env.ops.create_folder(...)
+
+# Calendar
+with EvalEnvironment("calendar") as env:
+    with env.track_changes() as tracker:
+        event = env.ops.create_event(...)
+
+# Slack
+with EvalEnvironment("slack") as env:
+    with env.track_changes() as tracker:
+        message = env.ops.send_message(...)
+
+# Linear
+with EvalEnvironment("linear") as env:
+    with env.track_changes() as tracker:
+        issue = env.ops.create_issue(...)
+```
+
+### Assertion Helpers
+
+Built-in assertion methods for common checks:
+
+```python
+# Count assertions
+tracker.assert_created(count=1, table="box_folders")
+tracker.assert_updated(count=2)
+tracker.assert_deleted(count=0)
+
+# Specific entity assertions
+tracker.assert_created_folder("Reports")
+tracker.assert_created_file("document.pdf")
+
+# Custom checks
+assert tracker.created_folder("Reports")  # Returns bool
+assert tracker.created_file("document.pdf")
+
+# Get by table
+folders = tracker.get_created_by_table("box_folders")
+files = tracker.get_created_by_table("box_files")
+```
+
+### Pre-Seeded Test Data
+
+Default user and root entities are created automatically:
+
+```python
+with EvalEnvironment("box") as env:
+    # env.default_user is already created
+    print(env.default_user.name)  # "Test User"
+    print(env.default_user.login)  # "test@example.com"
+
+    # Root folder (ID "0") already exists
+    folder = env.ops.create_folder(
+        name="Reports",
+        parent_id="0",  # Root folder
+        user_id=env.default_user.user_id
+    )
 ```
 
 ## Available Operations
