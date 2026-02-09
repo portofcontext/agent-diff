@@ -8,30 +8,19 @@ and tests state management utilities just like an AI agent eval would.
 import os
 import sys
 import tempfile
+
 import pytest
-from datetime import datetime, timezone
-from pathlib import Path
-
-# Add src to path for imports
-src_path = Path(__file__).parent.parent / "src"
-if str(src_path) not in sys.path:
-    sys.path.insert(0, str(src_path))
-
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, Session
-
-# Set dummy DATABASE_URL to avoid import error (we create our own DB)
-import os
-os.environ.setdefault("DATABASE_URL", "sqlite:///dummy.db")
+from sqlalchemy.orm import Session, sessionmaker
 
 # Import Calendar models and operations
-from services.calendar.database.schema import Base, User, Calendar, Event
-from services.calendar.database.typed_operations import CalendarOperations
 from eval_platform.eval_utilities import (
+    clear_environment,
     create_snapshot,
     delete_snapshot,
-    clear_environment,
 )
+from services.calendar.database.schema import Base, Calendar, Event
+from services.calendar.database.typed_operations import CalendarOperations
 
 # Tell pytest to skip conftest fixtures for this file
 pytest_plugins = []
@@ -44,12 +33,14 @@ def simple_diff(session: Session, before_suffix: str, after_suffix: str):
     Returns a dict-like object with inserts, updates, and deletes lists.
     """
     # Get all tables
-    result = session.execute(text("""
+    result = session.execute(
+        text("""
         SELECT name FROM sqlite_master
         WHERE type='table'
         AND name NOT LIKE 'sqlite_%'
         AND name NOT LIKE '%_snapshot_%'
-    """))
+    """)
+    )
     tables = [row[0] for row in result]
 
     inserts = []
@@ -61,7 +52,7 @@ def simple_diff(session: Session, before_suffix: str, after_suffix: str):
         after_table = f"{table}_snapshot_{after_suffix}"
 
         # Get primary key column (assume 'id' for simplicity)
-        pk_col = 'id'
+        pk_col = "id"
 
         # Find inserts (rows in after but not in before)
         insert_query = text(f"""
@@ -72,7 +63,7 @@ def simple_diff(session: Session, before_suffix: str, after_suffix: str):
         columns = insert_results.keys()
         for row in insert_results:
             row_dict = dict(zip(columns, row))
-            row_dict['__table__'] = table
+            row_dict["__table__"] = table
             inserts.append(row_dict)
 
         # Find deletes (rows in before but not in after)
@@ -83,7 +74,7 @@ def simple_diff(session: Session, before_suffix: str, after_suffix: str):
         delete_results = session.execute(delete_query)
         for row in delete_results:
             row_dict = dict(zip(columns, row))
-            row_dict['__table__'] = table
+            row_dict["__table__"] = table
             deletes.append(row_dict)
 
     # Create a simple object with the same interface as DiffResult
@@ -146,10 +137,7 @@ def test_basic_operations(sqlite_db):
     ops = CalendarOperations(session)
 
     # Create a user (automatically creates primary calendar)
-    user = ops.create_user(
-        email="test@example.com",
-        display_name="Test User"
-    )
+    user = ops.create_user(email="test@example.com", display_name="Test User")
 
     # Verify user was created
     assert user.id is not None
@@ -172,7 +160,7 @@ def test_basic_operations(sqlite_db):
         owner_id=user.id,
         summary="Work Calendar",
         description="Calendar for work events",
-        time_zone="America/New_York"
+        time_zone="America/New_York",
     )
 
     # Verify calendar was created
@@ -193,7 +181,7 @@ def test_basic_operations(sqlite_db):
         summary="Team Meeting",
         description="Weekly team sync",
         start={"dateTime": "2024-01-15T10:00:00Z"},
-        end={"dateTime": "2024-01-15T11:00:00Z"}
+        end={"dateTime": "2024-01-15T11:00:00Z"},
     )
 
     # Verify event was created
@@ -216,19 +204,15 @@ def test_state_management_with_snapshots(sqlite_db):
     ops = CalendarOperations(session)
 
     # Step 1: Create baseline state
-    user = ops.create_user(
-        email="agent@example.com",
-        display_name="Agent User"
-    )
-    calendar = ops.create_calendar(
-        owner_id=user.id,
-        summary="Test Calendar"
-    )
+    user = ops.create_user(email="agent@example.com", display_name="Agent User")
+    calendar = ops.create_calendar(owner_id=user.id, summary="Test Calendar")
 
     # Step 2: Take "before" snapshot
     before_snapshot = create_snapshot(session, "main", "before")
     assert before_snapshot.table_count > 0
-    print(f"✓ Created before snapshot: {before_snapshot.table_count} tables, {before_snapshot.total_rows} rows")
+    print(
+        f"✓ Created before snapshot: {before_snapshot.table_count} tables, {before_snapshot.total_rows} rows"
+    )
 
     # Step 3: Simulate agent action - create an event
     event = ops.create_event(
@@ -236,13 +220,15 @@ def test_state_management_with_snapshots(sqlite_db):
         calendar_id=calendar.id,
         summary="Q1 Planning",
         start={"dateTime": "2024-01-20T14:00:00Z"},
-        end={"dateTime": "2024-01-20T15:00:00Z"}
+        end={"dateTime": "2024-01-20T15:00:00Z"},
     )
     session.commit()
 
     # Step 4: Take "after" snapshot
     after_snapshot = create_snapshot(session, "main", "after")
-    print(f"✓ Created after snapshot: {after_snapshot.table_count} tables, {after_snapshot.total_rows} rows")
+    print(
+        f"✓ Created after snapshot: {after_snapshot.table_count} tables, {after_snapshot.total_rows} rows"
+    )
 
     # Step 5: Get diff
     diff = simple_diff(session, "before", "after")
@@ -255,7 +241,7 @@ def test_state_management_with_snapshots(sqlite_db):
     assert insert["summary"] == "Q1 Planning"
     assert insert["calendar_id"] == calendar.id
 
-    print(f"✓ Diff captured correctly:")
+    print("✓ Diff captured correctly:")
     print(f"  - Inserts: {len(diff.inserts)}")
     print(f"  - Updates: {len(diff.updates)}")
     print(f"  - Deletes: {len(diff.deletes)}")
@@ -281,7 +267,7 @@ def test_clear_environment(sqlite_db):
         user_id=user1.id,
         summary="Event 1",
         start={"dateTime": "2024-01-15T10:00:00Z"},
-        end={"dateTime": "2024-01-15T11:00:00Z"}
+        end={"dateTime": "2024-01-15T11:00:00Z"},
     )
     session.commit()
 
@@ -306,9 +292,17 @@ def test_clear_environment(sqlite_db):
     # Calendar operations raise exceptions instead of returning None, so we verify differently
     # Just query the raw table to verify deletion
     from sqlalchemy import select
-    from services.calendar.database.schema import Calendar, Event
-    assert session.execute(select(Calendar).where(Calendar.id == calendar1_id)).scalar_one_or_none() is None
-    assert session.execute(select(Event).where(Event.id == event1_id)).scalar_one_or_none() is None
+
+    assert (
+        session.execute(
+            select(Calendar).where(Calendar.id == calendar1_id)
+        ).scalar_one_or_none()
+        is None
+    )
+    assert (
+        session.execute(select(Event).where(Event.id == event1_id)).scalar_one_or_none()
+        is None
+    )
 
     print("✓ Environment cleared successfully")
 
@@ -331,14 +325,8 @@ def test_complete_agent_eval_workflow(sqlite_db):
     print("\n=== AI Agent Eval: Create Event Task ===")
 
     # Setup: Create baseline user and calendar
-    user = ops.create_user(
-        email="agent@test.com",
-        display_name="Test Agent User"
-    )
-    calendar = ops.create_calendar(
-        owner_id=user.id,
-        summary="Test Calendar"
-    )
+    user = ops.create_user(email="agent@test.com", display_name="Test Agent User")
+    calendar = ops.create_calendar(owner_id=user.id, summary="Test Calendar")
     session.commit()
     print(f"✓ Setup: Created baseline user {user.id} and calendar {calendar.id}")
 
@@ -356,7 +344,7 @@ def test_complete_agent_eval_workflow(sqlite_db):
         description="Quarterly planning meeting",
         location="Conference Room A",
         start={"dateTime": "2024-01-20T14:00:00Z"},
-        end={"dateTime": "2024-01-20T15:30:00Z"}
+        end={"dateTime": "2024-01-20T15:30:00Z"},
     )
     session.commit()
     print(f"✓ Agent created event {event.id}")
@@ -377,11 +365,15 @@ def test_complete_agent_eval_workflow(sqlite_db):
 
         # Check it was an event
         insert = diff.inserts[0]
-        assert insert["__table__"] == "calendar_events", f"Expected calendar_events, got {insert['__table__']}"
+        assert insert["__table__"] == "calendar_events", (
+            f"Expected calendar_events, got {insert['__table__']}"
+        )
         print("✓ Assertion passed: Entity is an event")
 
         # Check event summary
-        assert insert["summary"] == "Q1 Planning", f"Expected 'Q1 Planning', got {insert['summary']}"
+        assert insert["summary"] == "Q1 Planning", (
+            f"Expected 'Q1 Planning', got {insert['summary']}"
+        )
         print("✓ Assertion passed: Event summary is 'Q1 Planning'")
 
         # Check event description
@@ -389,7 +381,9 @@ def test_complete_agent_eval_workflow(sqlite_db):
         print("✓ Assertion passed: Event description is correct")
 
         # Check calendar ID
-        assert insert["calendar_id"] == calendar.id, f"Expected calendar_id={calendar.id}, got {insert['calendar_id']}"
+        assert insert["calendar_id"] == calendar.id, (
+            f"Expected calendar_id={calendar.id}, got {insert['calendar_id']}"
+        )
         print("✓ Assertion passed: Event is in correct calendar")
 
         print("\n🎉 EVAL PASSED: Agent successfully created the event!")
@@ -419,7 +413,7 @@ def test_multiple_operations_diff(sqlite_db):
         calendar_id=calendar.id,
         summary="Event 1",
         start={"dateTime": "2024-01-15T10:00:00Z"},
-        end={"dateTime": "2024-01-15T11:00:00Z"}
+        end={"dateTime": "2024-01-15T11:00:00Z"},
     )
     session.commit()
 
@@ -432,16 +426,20 @@ def test_multiple_operations_diff(sqlite_db):
         calendar_id=calendar.id,
         summary="Event 2",
         start={"dateTime": "2024-01-16T10:00:00Z"},
-        end={"dateTime": "2024-01-16T11:00:00Z"}
+        end={"dateTime": "2024-01-16T11:00:00Z"},
     )
     event3 = ops.create_event(
         user_id=user.id,
         calendar_id=calendar.id,
         summary="Event 3",
         start={"dateTime": "2024-01-17T10:00:00Z"},
-        end={"dateTime": "2024-01-17T11:00:00Z"}
+        end={"dateTime": "2024-01-17T11:00:00Z"},
     )
-    ops.update_event(calendar_id=calendar.id, event_id=event1.id, user_id=user.id, summary="Updated Event 1"
+    ops.update_event(
+        calendar_id=calendar.id,
+        event_id=event1.id,
+        user_id=user.id,
+        summary="Updated Event 1",
     )
     session.commit()
 
@@ -462,7 +460,7 @@ def test_multiple_operations_diff(sqlite_db):
     print("✓ Multiple operations diff captured correctly:")
     print(f"  - {len(diff.inserts)} inserts")
     print(f"  - {len(diff.deletes)} deletes")
-    print(f"  - Note: simple_diff for SQLite only tracks inserts/deletes")
+    print("  - Note: simple_diff for SQLite only tracks inserts/deletes")
 
     # Cleanup
     delete_snapshot(session, "main", "before")
@@ -485,21 +483,21 @@ def test_list_operations(sqlite_db):
         calendar_id=calendar.id,
         summary="Event 1",
         start={"dateTime": "2024-01-15T10:00:00Z"},
-        end={"dateTime": "2024-01-15T11:00:00Z"}
+        end={"dateTime": "2024-01-15T11:00:00Z"},
     )
     event2 = ops.create_event(
         user_id=user.id,
         calendar_id=calendar.id,
         summary="Event 2",
         start={"dateTime": "2024-01-16T10:00:00Z"},
-        end={"dateTime": "2024-01-16T11:00:00Z"}
+        end={"dateTime": "2024-01-16T11:00:00Z"},
     )
     event3 = ops.create_event(
         user_id=user.id,
         calendar_id=calendar.id,
         summary="Event 3",
         start={"dateTime": "2024-01-17T10:00:00Z"},
-        end={"dateTime": "2024-01-17T11:00:00Z"}
+        end={"dateTime": "2024-01-17T11:00:00Z"},
     )
     session.commit()
 
@@ -519,4 +517,5 @@ def test_list_operations(sqlite_db):
 if __name__ == "__main__":
     # Run tests directly with pytest
     import sys
+
     sys.exit(pytest.main([__file__, "-v", "-s"]))

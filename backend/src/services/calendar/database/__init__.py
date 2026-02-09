@@ -1,80 +1,74 @@
 # Database models and operations for Calendar API
-from .db import engine, Session, ScopedSession, get_session
-from .schema import (
-    User,
-    Calendar,
-    CalendarListEntry,
-    Event,
-    EventAttendee,
-    AclRule,
-    Setting,
-    Channel,
-    EventReminder,
-    SyncToken,
-    AccessRole,
-    EventStatus,
-    EventTransparency,
-    EventVisibility,
-    EventType,
-    AttendeeResponseStatus,
-    AclScopeType,
-    ReminderMethod,
-)
+from .base import Base
 from .operations import (
-    # Calendar operations
-    create_calendar,
-    get_calendar,
-    update_calendar,
-    delete_calendar,
     clear_calendar,
-    # CalendarList operations
-    insert_calendar_list_entry,
-    get_calendar_list_entry,
-    list_calendar_list_entries,
-    update_calendar_list_entry,
-    delete_calendar_list_entry,
-    # Event operations
-    create_event,
-    get_event,
-    list_events,
-    update_event,
-    patch_event,
-    delete_event,
-    import_event,
-    move_event,
-    quick_add_event,
-    get_event_instances,
-    # Recurring instance operations
-    update_recurring_instance,
-    delete_recurring_instance,
-    get_or_create_instance,
     # ACL operations
     create_acl_rule,
-    get_acl_rule,
-    list_acl_rules,
-    update_acl_rule,
+    # Calendar operations
+    create_calendar,
+    # Event operations
+    create_event,
+    create_user,
     delete_acl_rule,
-    # Settings operations
-    get_setting,
-    list_settings,
+    delete_calendar,
+    delete_calendar_list_entry,
+    delete_channel,
+    delete_event,
+    delete_recurring_instance,
+    get_acl_rule,
+    get_calendar,
+    get_calendar_list_entry,
     # Channel operations
     get_channel,
-    delete_channel,
-    # FreeBusy operations
-    query_free_busy,
+    get_event,
+    get_event_instances,
+    get_or_create_instance,
+    # Settings operations
+    get_setting,
     # User operations
     get_user,
     get_user_by_email,
-    create_user,
+    import_event,
+    # CalendarList operations
+    insert_calendar_list_entry,
+    list_acl_rules,
+    list_calendar_list_entries,
+    list_events,
+    list_settings,
+    move_event,
+    patch_event,
+    # FreeBusy operations
+    query_free_busy,
+    quick_add_event,
+    update_acl_rule,
+    update_calendar,
+    update_calendar_list_entry,
+    update_event,
+    # Recurring instance operations
+    update_recurring_instance,
 )
-from .base import Base
+from .schema import (
+    AccessRole,
+    AclRule,
+    AclScopeType,
+    AttendeeResponseStatus,
+    Calendar,
+    CalendarListEntry,
+    Channel,
+    Event,
+    EventAttendee,
+    EventReminder,
+    EventStatus,
+    EventTransparency,
+    EventType,
+    EventVisibility,
+    ReminderMethod,
+    Setting,
+    SyncToken,
+    User,
+)
 
 __all__ = [
-    # Database
-    "engine",
-    "Session",
-    "ScopedSession",
-    "get_session",
     # Base
     "Base",
     "User",
