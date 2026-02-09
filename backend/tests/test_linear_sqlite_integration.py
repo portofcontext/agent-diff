@@ -8,26 +8,20 @@ and tests state management utilities just like an AI agent eval would.
 import os
 import sys
 import tempfile
+
 import pytest
-from datetime import datetime
-from pathlib import Path
-
-# Add src to path for imports
-src_path = Path(__file__).parent.parent / "src"
-if str(src_path) not in sys.path:
-    sys.path.insert(0, str(src_path))
-
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
-# Import Linear models and operations
-from services.linear.database.schema import Base, User, Team, Organization, Issue, Comment
-from services.linear.database.typed_operations import LinearOperations
 from eval_platform.eval_utilities import (
+    clear_environment,
     create_snapshot,
     delete_snapshot,
-    clear_environment,
 )
+
+# Import Linear models and operations
+from services.linear.database.schema import Base, Issue, Organization, Team, User
+from services.linear.database.typed_operations import LinearOperations
 
 # Tell pytest to skip conftest fixtures for this file
 pytest_plugins = []
@@ -40,12 +34,14 @@ def simple_diff(session: Session, before_suffix: str, after_suffix: str):
     Returns a dict-like object with inserts, updates, and deletes lists.
     """
     # Get all tables
-    result = session.execute(text("""
+    result = session.execute(
+        text("""
         SELECT name FROM sqlite_master
         WHERE type='table'
         AND name NOT LIKE 'sqlite_%'
         AND name NOT LIKE '%_snapshot_%'
-    """))
+    """)
+    )
     tables = [row[0] for row in result]
 
     inserts = []
@@ -57,7 +53,7 @@ def simple_diff(session: Session, before_suffix: str, after_suffix: str):
         after_table = f"{table}_snapshot_{after_suffix}"
 
         # Get primary key column (assume 'id' for simplicity)
-        pk_col = 'id'
+        pk_col = "id"
 
         try:
             # Find inserts (rows in after but not in before)
@@ -69,7 +65,7 @@ def simple_diff(session: Session, before_suffix: str, after_suffix: str):
             columns = insert_results.keys()
             for row in insert_results:
                 row_dict = dict(zip(columns, row))
-                row_dict['__table__'] = table
+                row_dict["__table__"] = table
                 inserts.append(row_dict)
 
             # Find deletes (rows in before but not in after)
@@ -80,7 +76,7 @@ def simple_diff(session: Session, before_suffix: str, after_suffix: str):
             delete_results = session.execute(delete_query)
             for row in delete_results:
                 row_dict = dict(zip(columns, row))
-                row_dict['__table__'] = table
+                row_dict["__table__"] = table
                 deletes.append(row_dict)
         except Exception:
             # Skip tables that don't exist in both snapshots
@@ -157,11 +153,7 @@ def test_basic_operations(sqlite_db):
     assert org_dict["name"] == "Acme Inc"
 
     # Create a user
-    user = ops.create_user(
-        email="user@acme.com",
-        name="John Doe",
-        display_name="John"
-    )
+    user = ops.create_user(email="user@acme.com", name="John Doe", display_name="John")
 
     # Verify user was created
     assert user.id is not None
@@ -177,7 +169,7 @@ def test_basic_operations(sqlite_db):
         name="Engineering",
         key="ENG",
         organization_id=org.id,
-        description="Engineering team"
+        description="Engineering team",
     )
 
     # Verify team was created
@@ -190,7 +182,7 @@ def test_basic_operations(sqlite_db):
         team_id=team.id,
         title="Fix login bug",
         description="Users cannot log in",
-        priority=2
+        priority=2,
     )
 
     # Verify issue was created
@@ -212,25 +204,29 @@ def test_state_management_with_snapshots(sqlite_db):
 
     # Step 1: Create baseline state
     org = ops.create_organization(name="Test Org")
-    user = ops.create_user(email="agent@example.com", name="Agent User")
+    _user = ops.create_user(email="agent@example.com", name="Agent User")
     team = ops.create_team(name="Test Team", key="TEST", organization_id=org.id)
 
     # Step 2: Take "before" snapshot
     before_snapshot = create_snapshot(session, "main", "before")
     assert before_snapshot.table_count > 0
-    print(f"✓ Created before snapshot: {before_snapshot.table_count} tables, {before_snapshot.total_rows} rows")
+    print(
+        f"✓ Created before snapshot: {before_snapshot.table_count} tables, {before_snapshot.total_rows} rows"
+    )
 
     # Step 3: Simulate agent action - create an issue
-    issue = ops.create_issue(
+    _issue = ops.create_issue(
         team_id=team.id,
         title="Implement feature X",
-        description="Need to implement feature X"
+        description="Need to implement feature X",
     )
     session.commit()
 
     # Step 4: Take "after" snapshot
     after_snapshot = create_snapshot(session, "main", "after")
-    print(f"✓ Created after snapshot: {after_snapshot.table_count} tables, {after_snapshot.total_rows} rows")
+    print(
+        f"✓ Created after snapshot: {after_snapshot.table_count} tables, {after_snapshot.total_rows} rows"
+    )
 
     # Step 5: Get diff
     diff = simple_diff(session, "before", "after")
@@ -243,7 +239,7 @@ def test_state_management_with_snapshots(sqlite_db):
     assert insert["title"] == "Implement feature X"
     assert insert["teamId"] == team.id
 
-    print(f"✓ Diff captured correctly:")
+    print("✓ Diff captured correctly:")
     print(f"  - Inserts: {len(diff.inserts)}")
     print(f"  - Updates: {len(diff.updates)}")
     print(f"  - Deletes: {len(diff.deletes)}")
@@ -284,11 +280,29 @@ def test_clear_environment(sqlite_db):
 
     # Verify all data was deleted (query fresh from database)
     from sqlalchemy import select
-    assert session.execute(select(User).where(User.id == user1_id)).scalar_one_or_none() is None
-    assert session.execute(select(User).where(User.id == user2_id)).scalar_one_or_none() is None
-    assert session.execute(select(Organization).where(Organization.id == org_id)).scalar_one_or_none() is None
-    assert session.execute(select(Team).where(Team.id == team_id)).scalar_one_or_none() is None
-    assert session.execute(select(Issue).where(Issue.id == issue_id)).scalar_one_or_none() is None
+
+    assert (
+        session.execute(select(User).where(User.id == user1_id)).scalar_one_or_none()
+        is None
+    )
+    assert (
+        session.execute(select(User).where(User.id == user2_id)).scalar_one_or_none()
+        is None
+    )
+    assert (
+        session.execute(
+            select(Organization).where(Organization.id == org_id)
+        ).scalar_one_or_none()
+        is None
+    )
+    assert (
+        session.execute(select(Team).where(Team.id == team_id)).scalar_one_or_none()
+        is None
+    )
+    assert (
+        session.execute(select(Issue).where(Issue.id == issue_id)).scalar_one_or_none()
+        is None
+    )
 
     print("✓ Environment cleared successfully")
 
@@ -328,7 +342,7 @@ def test_complete_agent_eval_workflow(sqlite_db):
         team_id=team.id,
         title="Fix authentication bug",
         description="Users cannot authenticate properly",
-        priority=3
+        priority=3,
     )
     session.commit()
     print(f"✓ Agent created issue {issue.id}")
@@ -349,11 +363,15 @@ def test_complete_agent_eval_workflow(sqlite_db):
 
         # Check it was an issue
         insert = diff.inserts[0]
-        assert insert["__table__"] == "issues", f"Expected issues, got {insert['__table__']}"
+        assert insert["__table__"] == "issues", (
+            f"Expected issues, got {insert['__table__']}"
+        )
         print("✓ Assertion passed: Entity is an issue")
 
         # Check issue title
-        assert insert["title"] == "Fix authentication bug", f"Expected 'Fix authentication bug', got {insert['title']}"
+        assert insert["title"] == "Fix authentication bug", (
+            f"Expected 'Fix authentication bug', got {insert['title']}"
+        )
         print("✓ Assertion passed: Issue title is 'Fix authentication bug'")
 
         # Check issue description
@@ -385,7 +403,7 @@ def test_multiple_operations_diff(sqlite_db):
 
     # Setup baseline
     org = ops.create_organization(name="Org")
-    user = ops.create_user(email="user@example.com", name="User")
+    _user = ops.create_user(email="user@example.com", name="User")
     team = ops.create_team(name="Team", key="T", organization_id=org.id)
     issue1 = ops.create_issue(team_id=team.id, title="Issue 1")
     session.commit()
@@ -394,8 +412,8 @@ def test_multiple_operations_diff(sqlite_db):
     create_snapshot(session, "main", "before")
 
     # Multiple agent actions
-    issue2 = ops.create_issue(team_id=team.id, title="Issue 2")
-    issue3 = ops.create_issue(team_id=team.id, title="Issue 3")
+    _issue2 = ops.create_issue(team_id=team.id, title="Issue 2")
+    _issue3 = ops.create_issue(team_id=team.id, title="Issue 3")
     ops.update_issue(issue1.id, title="Updated Issue 1")
     session.commit()
 
@@ -416,7 +434,7 @@ def test_multiple_operations_diff(sqlite_db):
     print("✓ Multiple operations diff captured correctly:")
     print(f"  - {len(diff.inserts)} inserts")
     print(f"  - {len(diff.deletes)} deletes")
-    print(f"  - Note: simple_diff for SQLite only tracks inserts/deletes")
+    print("  - Note: simple_diff for SQLite only tracks inserts/deletes")
 
     # Cleanup
     delete_snapshot(session, "main", "before")
@@ -438,9 +456,7 @@ def test_comment_operations(sqlite_db):
 
     # Create a comment
     comment = ops.create_comment(
-        issue_id=issue.id,
-        body="This is a comment",
-        user_id=user.id
+        issue_id=issue.id, body="This is a comment", user_id=user.id
     )
     session.commit()
 
@@ -466,4 +482,5 @@ def test_comment_operations(sqlite_db):
 if __name__ == "__main__":
     # Run tests directly with pytest
     import sys
+
     sys.exit(pytest.main([__file__, "-v", "-s"]))

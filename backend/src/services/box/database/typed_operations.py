@@ -4,28 +4,6 @@ Typed operations for Box service - Pydantic-compatible wrappers for CRUD operati
 This module provides type-safe wrappers around the existing operations.py functions.
 All inputs and outputs use Pydantic models for validation and serialization, making
 them compatible with AI agent SDKs (Anthropic, OpenAI, LangChain, etc.).
-
-Usage:
-    from services.box.database.typed_operations import BoxOperations
-    from sqlalchemy.orm import Session
-
-    # Initialize with session (typically from your eval framework)
-    ops = BoxOperations(session)
-
-    # Call methods without passing session each time
-    user = ops.get_user(user_id="123")
-    user_dict = user.model_dump()  # Serialize to dict
-
-    folder = ops.create_folder(
-        name="My Folder",
-        parent_id="0",
-        user_id="user-123"
-    )
-
-    # All returned models have Pydantic methods:
-    # - .model_dump() - serialize to dict
-    # - .model_dump_json() - serialize to JSON string
-    # - .model_json_schema() - get JSON schema
 """
 
 from typing import List, Literal, Optional
@@ -34,7 +12,12 @@ from sqlalchemy.orm import Session
 
 # Import existing operations - we're wrapping these
 from . import operations as ops
-from .schema import Comment, File, FileVersion, Folder, User
+from .pydantic_schemas import (
+    CommentSchema,
+    FileSchema,
+    FolderSchema,
+    UserSchema,
+)
 
 
 class BoxOperations:
@@ -71,7 +54,7 @@ class BoxOperations:
     # USER OPERATIONS
     # ==========================================================================
 
-    def get_user(self, user_id: str) -> Optional[User]:
+    def get_user(self, user_id: str) -> Optional[UserSchema]:
         """
         Get a user by ID.
 
@@ -86,9 +69,10 @@ class BoxOperations:
             if user:
                 print(user.model_dump())
         """
-        return ops.get_user_by_id(self.session, user_id)
+        result = ops.get_user_by_id(self.session, user_id)
+        return UserSchema.model_validate(result) if result else None
 
-    def get_user_by_email(self, email: str) -> Optional[User]:
+    def get_user_by_email(self, email: str) -> Optional[UserSchema]:
         """
         Get a user by login/email.
 
@@ -98,7 +82,8 @@ class BoxOperations:
         Returns:
             User model or None if not found
         """
-        return ops.get_user_by_login(self.session, email)
+        result = ops.get_user_by_login(self.session, email)
+        return UserSchema.model_validate(result) if result else None
 
     def create_user(
         self,
@@ -111,7 +96,7 @@ class BoxOperations:
         phone: Optional[str] = None,
         address: Optional[str] = None,
         language: Optional[str] = None,
-    ) -> User:
+    ) -> UserSchema:
         """
         Create a new Box user.
 
@@ -136,7 +121,7 @@ class BoxOperations:
             )
             user_data = user.model_dump()
         """
-        return ops.create_user(
+        result = ops.create_user(
             self.session,
             name=name,
             login=login,
@@ -147,12 +132,13 @@ class BoxOperations:
             address=address,
             language=language,
         )
+        return UserSchema.model_validate(result)
 
     # ==========================================================================
     # FOLDER OPERATIONS
     # ==========================================================================
 
-    def get_folder(self, folder_id: str) -> Optional[Folder]:
+    def get_folder(self, folder_id: str) -> Optional[FolderSchema]:
         """
         Get a folder by ID.
 
@@ -162,7 +148,8 @@ class BoxOperations:
         Returns:
             Folder model or None if not found
         """
-        return ops.get_folder_by_id(self.session, folder_id)
+        result = ops.get_folder_by_id(self.session, folder_id)
+        return FolderSchema.model_validate(result) if result else None
 
     def create_folder(
         self,
@@ -172,7 +159,7 @@ class BoxOperations:
         user_id: str,
         folder_id: Optional[str] = None,
         description: Optional[str] = None,
-    ) -> Folder:
+    ) -> FolderSchema:
         """
         Create a new folder.
 
@@ -197,7 +184,7 @@ class BoxOperations:
             )
             print(folder.model_dump_json())
         """
-        return ops.create_folder(
+        result = ops.create_folder(
             self.session,
             name=name,
             parent_id=parent_id,
@@ -205,6 +192,7 @@ class BoxOperations:
             folder_id=folder_id,
             description=description,
         )
+        return FolderSchema.model_validate(result)
 
     def update_folder(
         self,
@@ -214,7 +202,7 @@ class BoxOperations:
         name: Optional[str] = None,
         description: Optional[str] = None,
         parent_id: Optional[str] = None,
-    ) -> Folder:
+    ) -> FolderSchema:
         """
         Update a folder.
 
@@ -239,7 +227,8 @@ class BoxOperations:
         if parent_id is not None:
             update_data["parent_id"] = parent_id
 
-        return ops.update_folder(self.session, folder_id, **update_data)
+        result = ops.update_folder(self.session, folder_id, **update_data)
+        return FolderSchema.model_validate(result)
 
     def delete_folder(self, folder_id: str, *, recursive: bool = False) -> None:
         """
@@ -277,12 +266,11 @@ class BoxOperations:
 
         Returns:
             Dictionary with 'entries', 'total_count', 'offset', 'limit'
-            All entry models have Pydantic methods
 
         Example:
             result = ops.list_folder_items("0", limit=50)
             for item in result['entries']:
-                print(item.model_dump())
+                print(item)
         """
         return ops.list_folder_items(
             self.session,
@@ -298,7 +286,7 @@ class BoxOperations:
     # FILE OPERATIONS
     # ==========================================================================
 
-    def get_file(self, file_id: str) -> Optional[File]:
+    def get_file(self, file_id: str) -> Optional[FileSchema]:
         """
         Get a file by ID.
 
@@ -308,7 +296,8 @@ class BoxOperations:
         Returns:
             File model or None if not found
         """
-        return ops.get_file_by_id(self.session, file_id)
+        result = ops.get_file_by_id(self.session, file_id)
+        return FileSchema.model_validate(result) if result else None
 
     def create_file(
         self,
@@ -320,7 +309,7 @@ class BoxOperations:
         size: Optional[int] = None,
         file_id: Optional[str] = None,
         description: Optional[str] = None,
-    ) -> File:
+    ) -> FileSchema:
         """
         Create a new file (upload).
 
@@ -350,7 +339,7 @@ class BoxOperations:
         if content is None:
             content = b""
 
-        return ops.create_file(
+        result = ops.create_file(
             self.session,
             name=name,
             parent_id=parent_id,
@@ -359,6 +348,7 @@ class BoxOperations:
             file_id=file_id,
             description=description,
         )
+        return FileSchema.model_validate(result)
 
     def update_file(
         self,
@@ -367,7 +357,7 @@ class BoxOperations:
         name: Optional[str] = None,
         description: Optional[str] = None,
         parent_id: Optional[str] = None,
-    ) -> File:
+    ) -> FileSchema:
         """
         Update a file's metadata.
 
@@ -388,7 +378,8 @@ class BoxOperations:
         if parent_id is not None:
             update_data["parent_id"] = parent_id
 
-        return ops.update_file(self.session, file_id, **update_data)
+        result = ops.update_file(self.session, file_id, **update_data)
+        return FileSchema.model_validate(result)
 
     def delete_file(self, file_id: str) -> None:
         """
@@ -404,7 +395,7 @@ class BoxOperations:
 
     def upload_file_version(
         self, file_id: str, *, content: bytes, size: Optional[int] = None
-    ) -> FileVersion:
+    ) -> FileSchema:
         """
         Upload a new version of an existing file.
 
@@ -414,18 +405,19 @@ class BoxOperations:
             size: File size in bytes (optional)
 
         Returns:
-            Created FileVersion model
+            Updated File model
 
         Example:
-            version = ops.upload_file_version(
+            file = ops.upload_file_version(
                 file_id="456",
                 content=new_content_bytes
             )
-            print(version.model_dump())
+            print(file.model_dump())
         """
-        return ops.upload_file_version(
+        result = ops.upload_file_version(
             self.session, file_id=file_id, content=content, size=size
         )
+        return FileSchema.model_validate(result)
 
     # ==========================================================================
     # COMMENT OPERATIONS
@@ -439,7 +431,7 @@ class BoxOperations:
         message: str,
         user_id: str,
         comment_id: Optional[str] = None,
-    ) -> Comment:
+    ) -> CommentSchema:
         """
         Create a comment on a file or another comment (reply).
 
@@ -461,7 +453,7 @@ class BoxOperations:
                 user_id="user-456"
             )
         """
-        return ops.create_comment(
+        result = ops.create_comment(
             self.session,
             item_id=item_id,
             item_type=item_type,
@@ -469,8 +461,9 @@ class BoxOperations:
             user_id=user_id,
             comment_id=comment_id,
         )
+        return CommentSchema.model_validate(result)
 
-    def get_comment(self, comment_id: str) -> Optional[Comment]:
+    def get_comment(self, comment_id: str) -> Optional[CommentSchema]:
         """
         Get a comment by ID.
 
@@ -480,9 +473,10 @@ class BoxOperations:
         Returns:
             Comment model or None if not found
         """
-        return ops.get_comment_by_id(self.session, comment_id)
+        result = ops.get_comment_by_id(self.session, comment_id)
+        return CommentSchema.model_validate(result) if result else None
 
-    def update_comment(self, comment_id: str, *, message: str) -> Comment:
+    def update_comment(self, comment_id: str, *, message: str) -> CommentSchema:
         """
         Update a comment's message.
 
@@ -493,7 +487,8 @@ class BoxOperations:
         Returns:
             Updated Comment model
         """
-        return ops.update_comment(self.session, comment_id, message=message)
+        result = ops.update_comment(self.session, comment_id, message=message)
+        return CommentSchema.model_validate(result)
 
     def delete_comment(self, comment_id: str) -> None:
         """

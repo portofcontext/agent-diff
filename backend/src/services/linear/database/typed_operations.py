@@ -33,6 +33,22 @@ from .entity_defaults import (
     user_defaults,
     workflow_state_defaults,
 )
+from .pydantic_schemas import (
+    AttachmentSchema,
+    CommentSchema,
+    CycleSchema,
+    DocumentSchema,
+    InitiativeSchema,
+    IssueLabelSchema,
+    IssueRelationSchema,
+    IssueSchema,
+    OrganizationSchema,
+    ProjectMilestoneSchema,
+    ProjectSchema,
+    TeamSchema,
+    UserSchema,
+    WorkflowStateSchema,
+)
 from .schema import (
     Attachment,
     Comment,
@@ -99,7 +115,7 @@ class LinearOperations:
 
     def create_organization(
         self, name: str, *, url_key: Optional[str] = None, **kwargs: Any
-    ) -> Organization:
+    ) -> OrganizationSchema:
         """
         Create a new organization.
 
@@ -115,9 +131,9 @@ class LinearOperations:
         org = Organization(**defaults)
         self.session.add(org)
         self.session.flush()
-        return org
+        return OrganizationSchema.model_validate(org)
 
-    def get_organization(self, org_id: str) -> Optional[Organization]:
+    def get_organization(self, org_id: str) -> Optional[OrganizationSchema]:
         """
         Get an organization by ID.
 
@@ -127,7 +143,8 @@ class LinearOperations:
         Returns:
             Organization model or None if not found
         """
-        return self.session.get(Organization, org_id)
+        result = self.session.get(Organization, org_id)
+        return OrganizationSchema.model_validate(result) if result else None
 
     # ========================================================================
     # USER OPERATIONS
@@ -137,11 +154,12 @@ class LinearOperations:
         self,
         email: str,
         name: str,
+        organization_id: str,
         *,
         display_name: Optional[str] = None,
         admin: bool = False,
         **kwargs: Any,
-    ) -> User:
+    ) -> UserSchema:
         """
         Create a new user.
 
@@ -163,9 +181,9 @@ class LinearOperations:
         user = User(**defaults)
         self.session.add(user)
         self.session.flush()
-        return user
+        return UserSchema.model_validate(user)
 
-    def get_user(self, user_id: str) -> Optional[User]:
+    def get_user(self, user_id: str) -> Optional[UserSchema]:
         """
         Get a user by ID.
 
@@ -175,9 +193,10 @@ class LinearOperations:
         Returns:
             User model or None if not found
         """
-        return self.session.get(User, user_id)
+        result = self.session.get(User, user_id)
+        return UserSchema.model_validate(result) if result else None
 
-    def get_user_by_email(self, email: str) -> Optional[User]:
+    def get_user_by_email(self, email: str) -> Optional[UserSchema]:
         """
         Get a user by email.
 
@@ -188,7 +207,8 @@ class LinearOperations:
             User model or None if not found
         """
         stmt = select(User).where(User.email == email)
-        return self.session.execute(stmt).scalar_one_or_none()
+        result = self.session.execute(stmt).scalar_one_or_none()
+        return UserSchema.model_validate(result) if result else None
 
     # ========================================================================
     # TEAM OPERATIONS
@@ -202,7 +222,7 @@ class LinearOperations:
         *,
         description: Optional[str] = None,
         **kwargs: Any,
-    ) -> Team:
+    ) -> TeamSchema:
         """
         Create a new team.
 
@@ -224,9 +244,9 @@ class LinearOperations:
         team = Team(**defaults)
         self.session.add(team)
         self.session.flush()
-        return team
+        return TeamSchema.model_validate(team)
 
-    def get_team(self, team_id: str) -> Optional[Team]:
+    def get_team(self, team_id: str) -> Optional[TeamSchema]:
         """
         Get a team by ID.
 
@@ -236,7 +256,8 @@ class LinearOperations:
         Returns:
             Team model or None if not found
         """
-        return self.session.get(Team, team_id)
+        result = self.session.get(Team, team_id)
+        return TeamSchema.model_validate(result) if result else None
 
     # ========================================================================
     # WORKFLOW STATE OPERATIONS
@@ -250,7 +271,7 @@ class LinearOperations:
         color: str = "#000000",
         type: str = "unstarted",
         **kwargs: Any,
-    ) -> WorkflowState:
+    ) -> WorkflowStateSchema:
         """
         Create a new workflow state.
 
@@ -269,9 +290,9 @@ class LinearOperations:
         state = WorkflowState(**defaults)
         self.session.add(state)
         self.session.flush()
-        return state
+        return WorkflowStateSchema.model_validate(state)
 
-    def get_workflow_state(self, state_id: str) -> Optional[WorkflowState]:
+    def get_workflow_state(self, state_id: str) -> Optional[WorkflowStateSchema]:
         """
         Get a workflow state by ID.
 
@@ -281,7 +302,8 @@ class LinearOperations:
         Returns:
             WorkflowState model or None if not found
         """
-        return self.session.get(WorkflowState, state_id)
+        result = self.session.get(WorkflowState, state_id)
+        return WorkflowStateSchema.model_validate(result) if result else None
 
     # ========================================================================
     # ISSUE OPERATIONS
@@ -298,7 +320,7 @@ class LinearOperations:
         assignee_id: Optional[str] = None,
         creator_id: Optional[str] = None,
         **kwargs: Any,
-    ) -> Issue:
+    ) -> IssueSchema:
         """
         Create a new issue.
 
@@ -329,9 +351,9 @@ class LinearOperations:
         issue = Issue(**defaults)
         self.session.add(issue)
         self.session.flush()
-        return issue
+        return IssueSchema.model_validate(issue)
 
-    def get_issue(self, issue_id: str) -> Optional[Issue]:
+    def get_issue(self, issue_id: str) -> Optional[IssueSchema]:
         """
         Get an issue by ID.
 
@@ -341,7 +363,8 @@ class LinearOperations:
         Returns:
             Issue model or None if not found
         """
-        return self.session.get(Issue, issue_id)
+        result = self.session.get(Issue, issue_id)
+        return IssueSchema.model_validate(result) if result else None
 
     def update_issue(
         self,
@@ -352,7 +375,7 @@ class LinearOperations:
         priority: Optional[int] = None,
         state_id: Optional[str] = None,
         assignee_id: Optional[str] = None,
-    ) -> Optional[Issue]:
+    ) -> Optional[IssueSchema]:
         """
         Update an issue.
 
@@ -384,7 +407,7 @@ class LinearOperations:
 
         issue.updatedAt = datetime.now()
         self.session.flush()
-        return issue
+        return IssueSchema.model_validate(issue)
 
     def delete_issue(self, issue_id: str) -> bool:
         """
@@ -410,7 +433,7 @@ class LinearOperations:
 
     def create_comment(
         self, issue_id: str, body: str, *, user_id: Optional[str] = None, **kwargs: Any
-    ) -> Comment:
+    ) -> CommentSchema:
         """
         Create a new comment on an issue.
 
@@ -431,9 +454,9 @@ class LinearOperations:
         comment = Comment(**defaults)
         self.session.add(comment)
         self.session.flush()
-        return comment
+        return CommentSchema.model_validate(comment)
 
-    def get_comment(self, comment_id: str) -> Optional[Comment]:
+    def get_comment(self, comment_id: str) -> Optional[CommentSchema]:
         """
         Get a comment by ID.
 
@@ -443,13 +466,14 @@ class LinearOperations:
         Returns:
             Comment model or None if not found
         """
-        return self.session.get(Comment, comment_id)
+        result = self.session.get(Comment, comment_id)
+        return CommentSchema.model_validate(result) if result else None
 
     def update_comment(
         self,
         comment_id: str,
         body: str,
-    ) -> Optional[Comment]:
+    ) -> Optional[CommentSchema]:
         """
         Update a comment.
 
@@ -467,7 +491,7 @@ class LinearOperations:
         comment.body = body
         comment.updatedAt = datetime.now()
         self.session.flush()
-        return comment
+        return CommentSchema.model_validate(comment)
 
     def delete_comment(self, comment_id: str) -> bool:
         """
@@ -500,7 +524,7 @@ class LinearOperations:
         lead_id: Optional[str] = None,
         target_date: Optional[datetime] = None,
         **kwargs: Any,
-    ) -> Project:
+    ) -> ProjectSchema:
         """
         Create a new project.
 
@@ -529,9 +553,9 @@ class LinearOperations:
         project = Project(**defaults)
         self.session.add(project)
         self.session.flush()
-        return project
+        return ProjectSchema.model_validate(project)
 
-    def get_project(self, project_id: str) -> Optional[Project]:
+    def get_project(self, project_id: str) -> Optional[ProjectSchema]:
         """
         Get a project by ID.
 
@@ -541,7 +565,8 @@ class LinearOperations:
         Returns:
             Project model or None if not found
         """
-        return self.session.get(Project, project_id)
+        result = self.session.get(Project, project_id)
+        return ProjectSchema.model_validate(result) if result else None
 
     def update_project(
         self,
@@ -551,7 +576,7 @@ class LinearOperations:
         description: Optional[str] = None,
         target_date: Optional[datetime] = None,
         **kwargs: Any,
-    ) -> Optional[Project]:
+    ) -> Optional[ProjectSchema]:
         """
         Update a project.
 
@@ -582,7 +607,7 @@ class LinearOperations:
 
         project.updatedAt = datetime.now()
         self.session.flush()
-        return project
+        return ProjectSchema.model_validate(project)
 
     def delete_project(self, project_id: str) -> bool:
         """
@@ -604,7 +629,7 @@ class LinearOperations:
 
     def list_projects(
         self, *, team_id: Optional[str] = None, limit: int = 100
-    ) -> list[Project]:
+    ) -> list[ProjectSchema]:
         """
         List projects.
 
@@ -617,7 +642,10 @@ class LinearOperations:
         """
         stmt = select(Project).limit(limit)
         # Note: team filtering would require join on team relationship
-        return list(self.session.execute(stmt).scalars())
+        return [
+            ProjectSchema.model_validate(p)
+            for p in self.session.execute(stmt).scalars()
+        ]
 
     # ========================================================================
     # PROJECT MILESTONE OPERATIONS
@@ -630,7 +658,7 @@ class LinearOperations:
         *,
         target_date: Optional[datetime] = None,
         **kwargs: Any,
-    ) -> ProjectMilestone:
+    ) -> ProjectMilestoneSchema:
         """
         Create a new project milestone.
 
@@ -651,9 +679,11 @@ class LinearOperations:
         milestone = ProjectMilestone(**defaults)
         self.session.add(milestone)
         self.session.flush()
-        return milestone
+        return ProjectMilestoneSchema.model_validate(milestone)
 
-    def get_project_milestone(self, milestone_id: str) -> Optional[ProjectMilestone]:
+    def get_project_milestone(
+        self, milestone_id: str
+    ) -> Optional[ProjectMilestoneSchema]:
         """
         Get a project milestone by ID.
 
@@ -663,7 +693,8 @@ class LinearOperations:
         Returns:
             ProjectMilestone model or None if not found
         """
-        return self.session.get(ProjectMilestone, milestone_id)
+        result = self.session.get(ProjectMilestone, milestone_id)
+        return ProjectMilestoneSchema.model_validate(result) if result else None
 
     def update_project_milestone(
         self,
@@ -671,7 +702,7 @@ class LinearOperations:
         *,
         name: Optional[str] = None,
         target_date: Optional[datetime] = None,
-    ) -> Optional[ProjectMilestone]:
+    ) -> Optional[ProjectMilestoneSchema]:
         """
         Update a project milestone.
 
@@ -694,7 +725,7 @@ class LinearOperations:
 
         milestone.updatedAt = datetime.now()
         self.session.flush()
-        return milestone
+        return ProjectMilestoneSchema.model_validate(milestone)
 
     def delete_project_milestone(self, milestone_id: str) -> bool:
         """
@@ -727,7 +758,7 @@ class LinearOperations:
         *,
         name: Optional[str] = None,
         **kwargs: Any,
-    ) -> Cycle:
+    ) -> CycleSchema:
         """
         Create a new cycle.
 
@@ -750,9 +781,9 @@ class LinearOperations:
         cycle = Cycle(**defaults)
         self.session.add(cycle)
         self.session.flush()
-        return cycle
+        return CycleSchema.model_validate(cycle)
 
-    def get_cycle(self, cycle_id: str) -> Optional[Cycle]:
+    def get_cycle(self, cycle_id: str) -> Optional[CycleSchema]:
         """
         Get a cycle by ID.
 
@@ -762,7 +793,8 @@ class LinearOperations:
         Returns:
             Cycle model or None if not found
         """
-        return self.session.get(Cycle, cycle_id)
+        result = self.session.get(Cycle, cycle_id)
+        return CycleSchema.model_validate(result) if result else None
 
     def update_cycle(
         self,
@@ -771,7 +803,7 @@ class LinearOperations:
         name: Optional[str] = None,
         starts_at: Optional[datetime] = None,
         ends_at: Optional[datetime] = None,
-    ) -> Optional[Cycle]:
+    ) -> Optional[CycleSchema]:
         """
         Update a cycle.
 
@@ -797,7 +829,7 @@ class LinearOperations:
 
         cycle.updatedAt = datetime.now()
         self.session.flush()
-        return cycle
+        return CycleSchema.model_validate(cycle)
 
     def delete_cycle(self, cycle_id: str) -> bool:
         """
@@ -828,7 +860,7 @@ class LinearOperations:
         description: Optional[str] = None,
         target_date: Optional[datetime] = None,
         **kwargs: Any,
-    ) -> Initiative:
+    ) -> InitiativeSchema:
         """
         Create a new initiative.
 
@@ -851,9 +883,9 @@ class LinearOperations:
         initiative = Initiative(**defaults)
         self.session.add(initiative)
         self.session.flush()
-        return initiative
+        return InitiativeSchema.model_validate(initiative)
 
-    def get_initiative(self, initiative_id: str) -> Optional[Initiative]:
+    def get_initiative(self, initiative_id: str) -> Optional[InitiativeSchema]:
         """
         Get an initiative by ID.
 
@@ -863,7 +895,8 @@ class LinearOperations:
         Returns:
             Initiative model or None if not found
         """
-        return self.session.get(Initiative, initiative_id)
+        result = self.session.get(Initiative, initiative_id)
+        return InitiativeSchema.model_validate(result) if result else None
 
     def update_initiative(
         self,
@@ -872,7 +905,7 @@ class LinearOperations:
         name: Optional[str] = None,
         description: Optional[str] = None,
         target_date: Optional[datetime] = None,
-    ) -> Optional[Initiative]:
+    ) -> Optional[InitiativeSchema]:
         """
         Update an initiative.
 
@@ -898,7 +931,7 @@ class LinearOperations:
 
         initiative.updatedAt = datetime.now()
         self.session.flush()
-        return initiative
+        return InitiativeSchema.model_validate(initiative)
 
     def delete_initiative(self, initiative_id: str) -> bool:
         """
@@ -924,7 +957,7 @@ class LinearOperations:
 
     def create_document(
         self, title: str, *, content: Optional[str] = None, **kwargs: Any
-    ) -> Document:
+    ) -> DocumentSchema:
         """
         Create a new document.
 
@@ -944,9 +977,9 @@ class LinearOperations:
         document = Document(**defaults)
         self.session.add(document)
         self.session.flush()
-        return document
+        return DocumentSchema.model_validate(document)
 
-    def get_document(self, document_id: str) -> Optional[Document]:
+    def get_document(self, document_id: str) -> Optional[DocumentSchema]:
         """
         Get a document by ID.
 
@@ -956,7 +989,8 @@ class LinearOperations:
         Returns:
             Document model or None if not found
         """
-        return self.session.get(Document, document_id)
+        result = self.session.get(Document, document_id)
+        return DocumentSchema.model_validate(result) if result else None
 
     def update_document(
         self,
@@ -964,7 +998,7 @@ class LinearOperations:
         *,
         title: Optional[str] = None,
         content: Optional[str] = None,
-    ) -> Optional[Document]:
+    ) -> Optional[DocumentSchema]:
         """
         Update a document.
 
@@ -987,7 +1021,7 @@ class LinearOperations:
 
         document.updatedAt = datetime.now()
         self.session.flush()
-        return document
+        return DocumentSchema.model_validate(document)
 
     def delete_document(self, document_id: str) -> bool:
         """
@@ -1013,7 +1047,7 @@ class LinearOperations:
 
     def create_attachment(
         self, title: str, url: str, *, issue_id: Optional[str] = None, **kwargs: Any
-    ) -> Attachment:
+    ) -> AttachmentSchema:
         """
         Create a new attachment.
 
@@ -1034,9 +1068,9 @@ class LinearOperations:
         attachment = Attachment(**defaults)
         self.session.add(attachment)
         self.session.flush()
-        return attachment
+        return AttachmentSchema.model_validate(attachment)
 
-    def get_attachment(self, attachment_id: str) -> Optional[Attachment]:
+    def get_attachment(self, attachment_id: str) -> Optional[AttachmentSchema]:
         """
         Get an attachment by ID.
 
@@ -1046,7 +1080,8 @@ class LinearOperations:
         Returns:
             Attachment model or None if not found
         """
-        return self.session.get(Attachment, attachment_id)
+        result = self.session.get(Attachment, attachment_id)
+        return AttachmentSchema.model_validate(result) if result else None
 
     def delete_attachment(self, attachment_id: str) -> bool:
         """
@@ -1077,7 +1112,7 @@ class LinearOperations:
         color: Optional[str] = None,
         team_id: Optional[str] = None,
         **kwargs: Any,
-    ) -> IssueLabel:
+    ) -> IssueLabelSchema:
         """
         Create a new issue label.
 
@@ -1100,9 +1135,9 @@ class LinearOperations:
         label = IssueLabel(**defaults)
         self.session.add(label)
         self.session.flush()
-        return label
+        return IssueLabelSchema.model_validate(label)
 
-    def get_issue_label(self, label_id: str) -> Optional[IssueLabel]:
+    def get_issue_label(self, label_id: str) -> Optional[IssueLabelSchema]:
         """
         Get an issue label by ID.
 
@@ -1112,7 +1147,8 @@ class LinearOperations:
         Returns:
             IssueLabel model or None if not found
         """
-        return self.session.get(IssueLabel, label_id)
+        result = self.session.get(IssueLabel, label_id)
+        return IssueLabelSchema.model_validate(result) if result else None
 
     def update_issue_label(
         self,
@@ -1120,7 +1156,7 @@ class LinearOperations:
         *,
         name: Optional[str] = None,
         color: Optional[str] = None,
-    ) -> Optional[IssueLabel]:
+    ) -> Optional[IssueLabelSchema]:
         """
         Update an issue label.
 
@@ -1143,7 +1179,7 @@ class LinearOperations:
 
         label.updatedAt = datetime.now()
         self.session.flush()
-        return label
+        return IssueLabelSchema.model_validate(label)
 
     def delete_issue_label(self, label_id: str) -> bool:
         """
@@ -1172,7 +1208,7 @@ class LinearOperations:
         issue_id: str,
         related_issue_id: str,
         type: str = "related",
-    ) -> IssueRelation:
+    ) -> IssueRelationSchema:
         """
         Create a relation between two issues.
 
@@ -1196,9 +1232,9 @@ class LinearOperations:
         )
         self.session.add(relation)
         self.session.flush()
-        return relation
+        return IssueRelationSchema.model_validate(relation)
 
-    def get_issue_relation(self, relation_id: str) -> Optional[IssueRelation]:
+    def get_issue_relation(self, relation_id: str) -> Optional[IssueRelationSchema]:
         """
         Get an issue relation by ID.
 
@@ -1208,7 +1244,8 @@ class LinearOperations:
         Returns:
             IssueRelation model or None if not found
         """
-        return self.session.get(IssueRelation, relation_id)
+        result = self.session.get(IssueRelation, relation_id)
+        return IssueRelationSchema.model_validate(result) if result else None
 
     def delete_issue_relation(self, relation_id: str) -> bool:
         """
@@ -1228,7 +1265,7 @@ class LinearOperations:
         self.session.flush()
         return True
 
-    def list_issue_relations(self, issue_id: str) -> list[IssueRelation]:
+    def list_issue_relations(self, issue_id: str) -> list[IssueRelationSchema]:
         """
         List all relations for an issue.
 
@@ -1242,4 +1279,7 @@ class LinearOperations:
             (IssueRelation.issueId == issue_id)
             | (IssueRelation.relatedIssueId == issue_id)
         )
-        return list(self.session.execute(stmt).scalars())
+        return [
+            IssueRelationSchema.model_validate(r)
+            for r in self.session.execute(stmt).scalars()
+        ]

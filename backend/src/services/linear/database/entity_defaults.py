@@ -11,9 +11,7 @@ from uuid import uuid4
 
 
 def organization_defaults(
-    name: str,
-    url_key: Optional[str] = None,
-    **overrides: Any
+    name: str, url_key: Optional[str] = None, **overrides: Any
 ) -> dict[str, Any]:
     """
     Generate default values for Organization creation.
@@ -72,11 +70,7 @@ def organization_defaults(
     return defaults
 
 
-def user_defaults(
-    email: str,
-    name: str,
-    **overrides: Any
-) -> dict[str, Any]:
+def user_defaults(email: str, name: str, **overrides: Any) -> dict[str, Any]:
     """
     Generate default values for User creation.
 
@@ -124,10 +118,7 @@ def user_defaults(
 
 
 def team_defaults(
-    name: str,
-    key: str,
-    organization_id: str,
-    **overrides: Any
+    name: str, key: str, organization_id: str, **overrides: Any
 ) -> dict[str, Any]:
     """
     Generate default values for Team creation.
@@ -195,11 +186,7 @@ def team_defaults(
     return defaults
 
 
-def issue_defaults(
-    team_id: str,
-    title: str,
-    **overrides: Any
-) -> dict[str, Any]:
+def issue_defaults(team_id: str, title: str, **overrides: Any) -> dict[str, Any]:
     """
     Generate default values for Issue creation.
 
@@ -228,10 +215,7 @@ def issue_defaults(
     return defaults
 
 
-def project_defaults(
-    name: str,
-    **overrides: Any
-) -> dict[str, Any]:
+def project_defaults(name: str, **overrides: Any) -> dict[str, Any]:
     """
     Generate default values for Project creation.
 
@@ -259,11 +243,7 @@ def project_defaults(
     return defaults
 
 
-def comment_defaults(
-    issue_id: str,
-    body: str,
-    **overrides: Any
-) -> dict[str, Any]:
+def comment_defaults(issue_id: str, body: str, **overrides: Any) -> dict[str, Any]:
     """
     Generate default values for Comment creation.
 
@@ -289,10 +269,7 @@ def comment_defaults(
 
 
 def workflow_state_defaults(
-    name: str,
-    team_id: str,
-    type: str = "unstarted",
-    **overrides: Any
+    name: str, team_id: str, type: str = "unstarted", **overrides: Any
 ) -> dict[str, Any]:
     """
     Generate default values for WorkflowState creation.
@@ -322,11 +299,7 @@ def workflow_state_defaults(
 
 
 def cycle_defaults(
-    team_id: str,
-    number: int,
-    starts_at: datetime,
-    ends_at: datetime,
-    **overrides: Any
+    team_id: str, number: int, starts_at: datetime, ends_at: datetime, **overrides: Any
 ) -> dict[str, Any]:
     """
     Generate default values for Cycle creation.
@@ -355,10 +328,7 @@ def cycle_defaults(
     return defaults
 
 
-def initiative_defaults(
-    name: str,
-    **overrides: Any
-) -> dict[str, Any]:
+def initiative_defaults(name: str, **overrides: Any) -> dict[str, Any]:
     """
     Generate default values for Initiative creation.
 
@@ -382,10 +352,7 @@ def initiative_defaults(
     return defaults
 
 
-def document_defaults(
-    title: str,
-    **overrides: Any
-) -> dict[str, Any]:
+def document_defaults(title: str, **overrides: Any) -> dict[str, Any]:
     """
     Generate default values for Document creation.
 
@@ -409,11 +376,7 @@ def document_defaults(
     return defaults
 
 
-def attachment_defaults(
-    title: str,
-    url: str,
-    **overrides: Any
-) -> dict[str, Any]:
+def attachment_defaults(title: str, url: str, **overrides: Any) -> dict[str, Any]:
     """
     Generate default values for Attachment creation.
 
@@ -439,9 +402,7 @@ def attachment_defaults(
 
 
 def project_milestone_defaults(
-    name: str,
-    project_id: str,
-    **overrides: Any
+    name: str, project_id: str, **overrides: Any
 ) -> dict[str, Any]:
     """
     Generate default values for ProjectMilestone creation.
@@ -467,10 +428,7 @@ def project_milestone_defaults(
     return defaults
 
 
-def issue_label_defaults(
-    name: str,
-    **overrides: Any
-) -> dict[str, Any]:
+def issue_label_defaults(name: str, **overrides: Any) -> dict[str, Any]:
     """
     Generate default values for IssueLabel creation.
 
