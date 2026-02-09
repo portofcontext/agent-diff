@@ -154,7 +154,6 @@ class LinearOperations:
         self,
         email: str,
         name: str,
-        organization_id: str,
         *,
         display_name: Optional[str] = None,
         admin: bool = False,

@@ -10,13 +10,13 @@ from typing import Any, Optional
 from sqlalchemy.orm import Session
 
 from . import operations as ops
-from .schema import (
-    AccessRole,
-    Calendar,
-    CalendarListEntry,
-    Event,
-    User,
+from .pydantic_schemas import (
+    CalendarListEntrySchema,
+    CalendarSchema,
+    EventSchema,
+    UserSchema,
 )
+from .schema import AccessRole
 
 
 class CalendarOperations:
@@ -70,7 +70,7 @@ class CalendarOperations:
         user_id: Optional[str] = None,
         display_name: Optional[str] = None,
         create_primary_calendar: bool = True,
-    ) -> User:
+    ) -> UserSchema:
         """
         Create a new user with optional primary calendar.
 
@@ -86,15 +86,16 @@ class CalendarOperations:
         Raises:
             DuplicateError: If user already exists
         """
-        return ops.create_user(
+        result = ops.create_user(
             self.session,
             email=email,
             user_id=user_id,
             display_name=display_name,
             create_primary_calendar=create_primary_calendar,
         )
+        return UserSchema.model_validate(result)
 
-    def get_user(self, user_id: str) -> Optional[User]:
+    def get_user(self, user_id: str) -> Optional[UserSchema]:
         """
         Get a user by ID.
 
@@ -104,9 +105,10 @@ class CalendarOperations:
         Returns:
             User model or None if not found
         """
-        return ops.get_user(self.session, user_id)
+        result = ops.get_user(self.session, user_id)
+        return UserSchema.model_validate(result) if result else None
 
-    def get_user_by_email(self, email: str) -> Optional[User]:
+    def get_user_by_email(self, email: str) -> Optional[UserSchema]:
         """
         Get a user by email address.
 
@@ -116,7 +118,8 @@ class CalendarOperations:
         Returns:
             User model or None if not found
         """
-        return ops.get_user_by_email(self.session, email)
+        result = ops.get_user_by_email(self.session, email)
+        return UserSchema.model_validate(result) if result else None
 
     # ========================================================================
     # CALENDAR OPERATIONS
@@ -131,7 +134,7 @@ class CalendarOperations:
         location: Optional[str] = None,
         time_zone: Optional[str] = None,
         calendar_id: Optional[str] = None,
-    ) -> Calendar:
+    ) -> CalendarSchema:
         """
         Create a new secondary calendar.
 
@@ -149,7 +152,7 @@ class CalendarOperations:
         Raises:
             ValidationError: If owner not found
         """
-        return ops.create_calendar(
+        result = ops.create_calendar(
             self.session,
             owner_id=owner_id,
             summary=summary,
@@ -158,8 +161,9 @@ class CalendarOperations:
             time_zone=time_zone,
             calendar_id=calendar_id,
         )
+        return CalendarSchema.model_validate(result)
 
-    def get_calendar(self, calendar_id: str) -> Optional[Calendar]:
+    def get_calendar(self, calendar_id: str) -> Optional[CalendarSchema]:
         """
         Get a calendar by ID.
 
@@ -169,7 +173,8 @@ class CalendarOperations:
         Returns:
             Calendar model or None if not found
         """
-        return ops.get_calendar(self.session, calendar_id)
+        result = ops.get_calendar(self.session, calendar_id)
+        return CalendarSchema.model_validate(result) if result else None
 
     def update_calendar(
         self,
@@ -179,7 +184,7 @@ class CalendarOperations:
         description: Optional[str] = None,
         location: Optional[str] = None,
         time_zone: Optional[str] = None,
-    ) -> Calendar:
+    ) -> CalendarSchema:
         """
         Update a calendar.
 
@@ -196,7 +201,7 @@ class CalendarOperations:
         Raises:
             CalendarNotFoundError: If calendar not found
         """
-        return ops.update_calendar(
+        result = ops.update_calendar(
             self.session,
             calendar_id=calendar_id,
             summary=summary,
@@ -204,6 +209,7 @@ class CalendarOperations:
             location=location,
             time_zone=time_zone,
         )
+        return CalendarSchema.model_validate(result)
 
     def delete_calendar(self, calendar_id: str) -> None:
         """
@@ -247,7 +253,7 @@ class CalendarOperations:
         color_id: Optional[str] = None,
         hidden: bool = False,
         selected: bool = True,
-    ) -> CalendarListEntry:
+    ) -> CalendarListEntrySchema:
         """
         Subscribe a user to a calendar (insert calendar list entry).
 
@@ -267,7 +273,7 @@ class CalendarOperations:
             ValidationError: If user or calendar not found
             DuplicateError: If already subscribed
         """
-        return ops.insert_calendar_list_entry(
+        result = ops.insert_calendar_list_entry(
             self.session,
             user_id=user_id,
             calendar_id=calendar_id,
@@ -277,12 +283,13 @@ class CalendarOperations:
             hidden=hidden,
             selected=selected,
         )
+        return CalendarListEntrySchema.model_validate(result)
 
     def get_calendar_list_entry(
         self,
         user_id: str,
         calendar_id: str,
-    ) -> Optional[CalendarListEntry]:
+    ) -> Optional[CalendarListEntrySchema]:
         """
         Get a specific calendar list entry.
 
@@ -293,11 +300,12 @@ class CalendarOperations:
         Returns:
             CalendarListEntry model or None if not found
         """
-        return ops.get_calendar_list_entry(
+        result = ops.get_calendar_list_entry(
             self.session,
             user_id=user_id,
             calendar_id=calendar_id,
         )
+        return CalendarListEntrySchema.model_validate(result) if result else None
 
     def list_calendar_list_entries(
         self,
@@ -306,7 +314,7 @@ class CalendarOperations:
         show_deleted: bool = False,
         show_hidden: bool = False,
         min_access_role: Optional[AccessRole] = None,
-    ) -> list[CalendarListEntry]:
+    ) -> list[CalendarListEntrySchema]:
         """
         List calendar list entries for a user.
 
@@ -319,13 +327,14 @@ class CalendarOperations:
         Returns:
             List of CalendarListEntry models
         """
-        return ops.list_calendar_list_entries(
+        results = ops.list_calendar_list_entries(
             self.session,
             user_id=user_id,
             show_deleted=show_deleted,
             show_hidden=show_hidden,
             min_access_role=min_access_role,
         )
+        return [CalendarListEntrySchema.model_validate(r) for r in results]
 
     # ========================================================================
     # EVENT OPERATIONS
@@ -345,7 +354,7 @@ class CalendarOperations:
         recurrence: Optional[list[str]] = None,
         event_id: Optional[str] = None,
         **kwargs: Any,
-    ) -> Event:
+    ) -> EventSchema:
         """
         Create a new event.
 
@@ -369,7 +378,7 @@ class CalendarOperations:
             CalendarNotFoundError: If calendar not found
             ValidationError: If required fields missing or invalid
         """
-        return ops.create_event(
+        result = ops.create_event(
             self.session,
             calendar_id=calendar_id,
             user_id=user_id,
@@ -383,13 +392,14 @@ class CalendarOperations:
             event_id=event_id,
             **kwargs,
         )
+        return EventSchema.model_validate(result)
 
     def get_event(
         self,
         calendar_id: str,
         event_id: str,
         user_id: str,
-    ) -> Optional[Event]:
+    ) -> Optional[EventSchema]:
         """
         Get an event by ID.
 
@@ -401,12 +411,13 @@ class CalendarOperations:
         Returns:
             Event model or None if not found
         """
-        return ops.get_event(
+        result = ops.get_event(
             self.session,
             calendar_id=calendar_id,
             event_id=event_id,
             user_id=user_id,
         )
+        return EventSchema.model_validate(result) if result else None
 
     def list_events(
         self,
@@ -418,7 +429,7 @@ class CalendarOperations:
         show_deleted: bool = False,
         single_events: bool = False,
         max_results: int = 250,
-    ) -> list[Event]:
+    ) -> list[EventSchema]:
         """
         List events in a calendar.
 
@@ -447,7 +458,7 @@ class CalendarOperations:
             single_events=single_events,
             max_results=max_results,
         )
-        return events
+        return [EventSchema.model_validate(e) for e in events]
 
     def update_event(
         self,
@@ -463,7 +474,7 @@ class CalendarOperations:
         attendees: Optional[list[dict[str, Any]]] = None,
         recurrence: Optional[list[str]] = None,
         **kwargs: Any,
-    ) -> Event:
+    ) -> EventSchema:
         """
         Update an event (full update).
 
@@ -504,13 +515,14 @@ class CalendarOperations:
             update_data["recurrence"] = recurrence
         update_data.update(kwargs)
 
-        return ops.update_event(
+        result = ops.update_event(
             self.session,
             calendar_id=calendar_id,
             event_id=event_id,
             user_id=user_id,
             **update_data,
         )
+        return EventSchema.model_validate(result)
 
     def delete_event(
         self,
@@ -540,7 +552,7 @@ class CalendarOperations:
         self,
         calendar_id: str,
         text: str,
-    ) -> Event:
+    ) -> EventSchema:
         """
         Create an event from a natural language text string.
 
@@ -555,8 +567,9 @@ class CalendarOperations:
             CalendarNotFoundError: If calendar not found
             ValidationError: If text cannot be parsed
         """
-        return ops.quick_add_event(
+        result = ops.quick_add_event(
             self.session,
             calendar_id=calendar_id,
             text=text,
         )
+        return EventSchema.model_validate(result)

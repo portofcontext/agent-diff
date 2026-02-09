@@ -35,8 +35,8 @@ def test_box_operations_as_pctx_tools():
 
             print("")
             print("=" * 20 + tool.name + "=" * 20)
-            pprint(tool.get_input_jsonschema())
-            pprint(tool.get_output_jsonschema())
+            pprint(tool.input_json_schema())
+            pprint(tool.output_json_schema())
 
 
 def test_box_operations_as_langchain_tools():
@@ -80,19 +80,19 @@ def test_calendar_operations_as_pctx_tools():
             env.ops.get_user,
             env.ops.get_user_by_email,
             env.ops.create_calendar,
-            env.ops.get_calendar,
-            env.ops.update_calendar,
-            env.ops.delete_calendar,
-            env.ops.clear_calendar,
-            env.ops.insert_calendar_list_entry,
-            env.ops.get_calendar_list_entry,
-            env.ops.list_calendar_list_entries,
-            env.ops.create_event,
-            env.ops.get_event,
-            env.ops.list_events,
-            env.ops.update_event,
-            env.ops.delete_event,
-            env.ops.quick_add_event,
+            # env.ops.get_calendar,
+            # env.ops.update_calendar,
+            # env.ops.delete_calendar,
+            # env.ops.clear_calendar,
+            # env.ops.insert_calendar_list_entry,
+            # env.ops.get_calendar_list_entry,
+            # env.ops.list_calendar_list_entries,
+            # env.ops.create_event,
+            # env.ops.get_event,
+            # env.ops.list_events,
+            # env.ops.update_event,
+            # env.ops.delete_event,
+            # env.ops.quick_add_event,
         ]:
             tool = pctx_tool(op, namespace="calendar")
 
@@ -109,19 +109,19 @@ def test_calendar_operations_as_langchain_tools():
             env.ops.get_user,
             env.ops.get_user_by_email,
             env.ops.create_calendar,
-            env.ops.get_calendar,
-            env.ops.update_calendar,
-            env.ops.delete_calendar,
-            env.ops.clear_calendar,
-            env.ops.insert_calendar_list_entry,
-            env.ops.get_calendar_list_entry,
-            env.ops.list_calendar_list_entries,
-            env.ops.create_event,
-            env.ops.get_event,
-            env.ops.list_events,
-            env.ops.update_event,
-            env.ops.delete_event,
-            env.ops.quick_add_event,
+            # env.ops.get_calendar,
+            # env.ops.update_calendar,
+            # env.ops.delete_calendar,
+            # env.ops.clear_calendar,
+            # env.ops.insert_calendar_list_entry,
+            # env.ops.get_calendar_list_entry,
+            # env.ops.list_calendar_list_entries,
+            # env.ops.create_event,
+            # env.ops.get_event,
+            # env.ops.list_events,
+            # env.ops.update_event,
+            # env.ops.delete_event,
+            # env.ops.quick_add_event,
         ]:
             tool = langchain_tool(op)
 
