@@ -12,6 +12,7 @@ from enum import Enum
 from typing import Any, Optional
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     Column,
     Date,
@@ -23,13 +24,11 @@ from sqlalchemy import (
     Table,
     UniqueConstraint,
 )
-from sqlalchemy import JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from eval_platform.pydantic_mixin import PydanticMixin
 
 
-class Base(DeclarativeBase, PydanticMixin):
-    """Base declarative class for Linear ORM models with Pydantic serialization."""
+class Base(DeclarativeBase):
+    """Base declarative class for Linear ORM models."""
 
 
 class ProjectMilestoneStatus(str, Enum):
@@ -491,9 +490,7 @@ class Comment(Base):
         "User", foreign_keys=[resolvingUserId]
     )
     # syncedWith skipped
-    threadSummary: Mapped[Optional[dict[str, Any]]] = mapped_column(
-        JSON, nullable=True
-    )
+    threadSummary: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, nullable=True)
     updatedAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     url: Mapped[str] = mapped_column(String, nullable=False)
     userId: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id"), nullable=True)
@@ -1384,9 +1381,7 @@ class Organization(Base):
     createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     createdIssueCount: Mapped[int] = mapped_column(Integer, nullable=False)
     customerCount: Mapped[int] = mapped_column(Integer, nullable=False)
-    customersConfiguration: Mapped[dict[str, Any]] = mapped_column(
-        JSON, nullable=False
-    )
+    customersConfiguration: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     customersEnabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
     defaultFeedSummarySchedule: Mapped[Optional[str]] = mapped_column(
         String, nullable=True
@@ -1476,9 +1471,7 @@ class Organization(Base):
         back_populates="organization",
         foreign_keys="Template.organizationId",
     )
-    themeSettings: Mapped[Optional[dict[str, Any]]] = mapped_column(
-        JSON, nullable=True
-    )
+    themeSettings: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON, nullable=True)
     trialEndsAt: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     updatedAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     urlKey: Mapped[str] = mapped_column(String, unique=True, nullable=False)

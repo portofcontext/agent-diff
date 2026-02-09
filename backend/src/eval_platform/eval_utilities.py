@@ -37,43 +37,42 @@ Example:
     clear_environment(session, env.schema_name)
 """
 
-from typing import List, Optional, Dict, Any, Literal
-from datetime import datetime
-from uuid import UUID, uuid4
 from dataclasses import dataclass
-
-from sqlalchemy.orm import Session
-from sqlalchemy import text
+from datetime import datetime
+from typing import Any, Dict, List, Literal, Optional
+from uuid import UUID
 
 from eval_platform.evaluationEngine.differ import Differ
 from eval_platform.evaluationEngine.models import DiffResult
 from eval_platform.isolationEngine.session import SessionManager
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 # Export new clean API (import at end to avoid circular dependencies)
 __all__ = [
     # New clean API
-    'EvalEnvironment',
-    'DiffTracker',
-    'ChangeRecord',
-    'setup_eval',
+    "EvalEnvironment",
+    "DiffTracker",
+    "ChangeRecord",
+    "setup_eval",
     # Legacy API
-    'EnvironmentInfo',
-    'SnapshotInfo',
-    'SeedResult',
-    'create_environment',
-    'clear_environment',
-    'delete_environment',
-    'create_snapshot',
-    'delete_snapshot',
-    'get_diff',
-    'get_inserts_only',
-    'get_updates_only',
-    'get_deletes_only',
-    'seed_box_baseline',
-    'seed_calendar_baseline',
-    'seed_slack_baseline',
-    'seed_linear_baseline',
-    'EvalContext',
+    "EnvironmentInfo",
+    "SnapshotInfo",
+    "SeedResult",
+    "create_environment",
+    "clear_environment",
+    "delete_environment",
+    "create_snapshot",
+    "delete_snapshot",
+    "get_diff",
+    "get_inserts_only",
+    "get_updates_only",
+    "get_deletes_only",
+    "seed_box_baseline",
+    "seed_calendar_baseline",
+    "seed_slack_baseline",
+    "seed_linear_baseline",
+    "EvalContext",
 ]
 
 
@@ -81,9 +80,11 @@ __all__ = [
 # DATA CLASSES FOR TYPED RETURNS
 # ==============================================================================
 
+
 @dataclass
 class EnvironmentInfo:
     """Information about a test environment."""
+
     id: UUID
     service: Literal["box", "calendar", "slack", "linear"]
     schema_name: str
@@ -97,6 +98,7 @@ class EnvironmentInfo:
 @dataclass
 class SnapshotInfo:
     """Information about a database snapshot."""
+
     snapshot_id: str
     schema_name: str
     table_count: int
@@ -107,6 +109,7 @@ class SnapshotInfo:
 @dataclass
 class SeedResult:
     """Result of seeding an environment."""
+
     environment: EnvironmentInfo
     users_created: int
     folders_created: int
@@ -118,13 +121,14 @@ class SeedResult:
 # ENVIRONMENT MANAGEMENT
 # ==============================================================================
 
+
 def create_environment(
     session_manager: SessionManager,
     *,
     service: Literal["box", "calendar", "slack", "linear"],
     template_name: Optional[str] = None,
     impersonate_user_id: Optional[str] = None,
-    impersonate_email: Optional[str] = None
+    impersonate_email: Optional[str] = None,
 ) -> EnvironmentInfo:
     """
     Create a new isolated test environment.
@@ -168,12 +172,14 @@ def clear_environment(session: Session, schema_name: str = "main") -> None:
 
     if dialect == "sqlite":
         # SQLite: Get all tables from sqlite_master
-        result = session.execute(text("""
+        result = session.execute(
+            text("""
             SELECT name FROM sqlite_master
             WHERE type='table'
             AND name NOT LIKE 'sqlite_%'
             AND name NOT LIKE '%_snapshot_%'
-        """))
+        """)
+        )
         tables = [row[0] for row in result]
 
         # Delete from all tables
@@ -181,11 +187,13 @@ def clear_environment(session: Session, schema_name: str = "main") -> None:
             session.execute(text(f'DELETE FROM "{table}"'))
     else:
         # PostgreSQL: Get all tables in the schema
-        result = session.execute(text(f"""
+        result = session.execute(
+            text(f"""
             SELECT tablename
             FROM pg_tables
             WHERE schemaname = '{schema_name}'
-        """))
+        """)
+        )
         tables = [row[0] for row in result]
 
         # Truncate all tables
@@ -215,11 +223,13 @@ def delete_environment(session: Session, schema_name: str = "main") -> None:
 
     if dialect == "sqlite":
         # SQLite: Drop all tables
-        result = session.execute(text("""
+        result = session.execute(
+            text("""
             SELECT name FROM sqlite_master
             WHERE type='table'
             AND name NOT LIKE 'sqlite_%'
-        """))
+        """)
+        )
         tables = [row[0] for row in result]
 
         for table in tables:
@@ -235,12 +245,13 @@ def delete_environment(session: Session, schema_name: str = "main") -> None:
 # SNAPSHOT MANAGEMENT (for diffing)
 # ==============================================================================
 
+
 def create_snapshot(
     session: Session,
     schema_name: str,
     snapshot_suffix: str,
     *,
-    tables: Optional[List[str]] = None
+    tables: Optional[List[str]] = None,
 ) -> SnapshotInfo:
     """
     Create a snapshot of the current database state.
@@ -271,19 +282,23 @@ def create_snapshot(
     # Get tables to snapshot
     if tables is None:
         if dialect == "sqlite":
-            result = session.execute(text("""
+            result = session.execute(
+                text("""
                 SELECT name FROM sqlite_master
                 WHERE type='table'
                 AND name NOT LIKE 'sqlite_%'
                 AND name NOT LIKE '%_snapshot_%'
-            """))
+            """)
+            )
         else:
-            result = session.execute(text(f"""
+            result = session.execute(
+                text(f"""
                 SELECT tablename
                 FROM pg_tables
                 WHERE schemaname = '{schema_name}'
                 AND tablename NOT LIKE '%_snapshot_%'
-            """))
+            """)
+            )
         tables = [row[0] for row in result]
 
     total_rows = 0
@@ -293,15 +308,23 @@ def create_snapshot(
 
         if dialect == "sqlite":
             session.execute(text(f'DROP TABLE IF EXISTS "{snapshot_table}"'))
-            session.execute(text(f'CREATE TABLE "{snapshot_table}" AS SELECT * FROM "{table}"'))
-            count_result = session.execute(text(f'SELECT COUNT(*) FROM "{snapshot_table}"'))
+            session.execute(
+                text(f'CREATE TABLE "{snapshot_table}" AS SELECT * FROM "{table}"')
+            )
+            count_result = session.execute(
+                text(f'SELECT COUNT(*) FROM "{snapshot_table}"')
+            )
         else:
-            session.execute(text(f"""
+            session.execute(
+                text(f"""
                 DROP TABLE IF EXISTS {schema_name}."{snapshot_table}" CASCADE;
                 CREATE TABLE {schema_name}."{snapshot_table}" AS
                 SELECT * FROM {schema_name}."{table}";
-            """))
-            count_result = session.execute(text(f'SELECT COUNT(*) FROM {schema_name}."{snapshot_table}"'))
+            """)
+            )
+            count_result = session.execute(
+                text(f'SELECT COUNT(*) FROM {schema_name}."{snapshot_table}"')
+            )
 
         total_rows += count_result.scalar()
 
@@ -312,15 +335,11 @@ def create_snapshot(
         schema_name=schema_name,
         table_count=len(tables),
         total_rows=total_rows,
-        created_at=datetime.now()
+        created_at=datetime.now(),
     )
 
 
-def delete_snapshot(
-    session: Session,
-    schema_name: str,
-    snapshot_suffix: str
-) -> None:
+def delete_snapshot(session: Session, schema_name: str, snapshot_suffix: str) -> None:
     """
     Delete a snapshot (drop all snapshot tables with the given suffix).
 
@@ -336,18 +355,22 @@ def delete_snapshot(
 
     # Find all snapshot tables with this suffix
     if dialect == "sqlite":
-        result = session.execute(text(f"""
+        result = session.execute(
+            text(f"""
             SELECT name FROM sqlite_master
             WHERE type='table'
             AND name LIKE '%_snapshot_{snapshot_suffix}'
-        """))
+        """)
+        )
     else:
-        result = session.execute(text(f"""
+        result = session.execute(
+            text(f"""
             SELECT tablename
             FROM pg_tables
             WHERE schemaname = '{schema_name}'
             AND tablename LIKE '%_snapshot_{snapshot_suffix}'
-        """))
+        """)
+        )
 
     tables = [row[0] for row in result]
 
@@ -356,7 +379,9 @@ def delete_snapshot(
         if dialect == "sqlite":
             session.execute(text(f'DROP TABLE IF EXISTS "{table}"'))
         else:
-            session.execute(text(f'DROP TABLE IF EXISTS {schema_name}."{table}" CASCADE'))
+            session.execute(
+                text(f'DROP TABLE IF EXISTS {schema_name}."{table}" CASCADE')
+            )
 
     session.commit()
 
@@ -365,13 +390,14 @@ def delete_snapshot(
 # DIFF OPERATIONS
 # ==============================================================================
 
+
 def get_diff(
     session_manager: SessionManager,
     schema_name: str,
     before_suffix: str,
     after_suffix: str,
     *,
-    exclude_columns: Optional[List[str]] = None
+    exclude_columns: Optional[List[str]] = None,
 ) -> DiffResult:
     """
     Get the diff between two snapshots (what changed).
@@ -414,20 +440,17 @@ def get_diff(
     differ = Differ(
         schema=schema_name,
         environment_id=environment_id,
-        session_manager=session_manager
+        session_manager=session_manager,
     )
 
-    return differ.get_diff(
-        before_suffix=before_suffix,
-        after_suffix=after_suffix
-    )
+    return differ.get_diff(before_suffix=before_suffix, after_suffix=after_suffix)
 
 
 def get_inserts_only(
     session_manager: SessionManager,
     schema_name: str,
     before_suffix: str,
-    after_suffix: str
+    after_suffix: str,
 ) -> List[Dict[str, Any]]:
     """
     Get only the inserted rows (convenience function).
@@ -455,7 +478,7 @@ def get_updates_only(
     session_manager: SessionManager,
     schema_name: str,
     before_suffix: str,
-    after_suffix: str
+    after_suffix: str,
 ) -> List[Dict[str, Any]]:
     """
     Get only the updated rows (convenience function).
@@ -470,7 +493,7 @@ def get_deletes_only(
     session_manager: SessionManager,
     schema_name: str,
     before_suffix: str,
-    after_suffix: str
+    after_suffix: str,
 ) -> List[Dict[str, Any]]:
     """
     Get only the deleted rows (convenience function).
@@ -485,6 +508,7 @@ def get_deletes_only(
 # SEEDING HELPERS (wrappers around existing seed scripts)
 # ==============================================================================
 
+
 def seed_box_baseline(
     session: Session,
     schema_name: str,
@@ -492,7 +516,7 @@ def seed_box_baseline(
     admin_email: str = "admin@box.local",
     num_users: int = 3,
     num_folders: int = 5,
-    num_files: int = 10
+    num_files: int = 10,
 ) -> SeedResult:
     """
     Seed a Box environment with baseline test data.
@@ -530,7 +554,7 @@ def seed_calendar_baseline(
     *,
     user_email: str = "user@calendar.local",
     num_calendars: int = 2,
-    num_events: int = 10
+    num_events: int = 10,
 ) -> SeedResult:
     """Seed a Calendar environment with baseline test data."""
     raise NotImplementedError("Integrate with existing seed scripts")
@@ -542,7 +566,7 @@ def seed_slack_baseline(
     *,
     team_name: str = "Test Team",
     num_channels: int = 5,
-    num_users: int = 10
+    num_users: int = 10,
 ) -> SeedResult:
     """Seed a Slack environment with baseline test data."""
     raise NotImplementedError("Integrate with existing seed scripts")
@@ -554,7 +578,7 @@ def seed_linear_baseline(
     *,
     team_name: str = "Engineering",
     num_projects: int = 3,
-    num_issues: int = 20
+    num_issues: int = 20,
 ) -> SeedResult:
     """Seed a Linear environment with baseline test data."""
     raise NotImplementedError("Integrate with existing seed scripts")
@@ -563,6 +587,7 @@ def seed_linear_baseline(
 # ==============================================================================
 # EVALUATION WORKFLOW HELPER
 # ==============================================================================
+
 
 class EvalContext:
     """
@@ -593,7 +618,7 @@ class EvalContext:
         *,
         before_suffix: str = "before",
         after_suffix: str = "after",
-        cleanup_snapshots: bool = True
+        cleanup_snapshots: bool = True,
     ):
         """
         Initialize eval context.
@@ -612,7 +637,7 @@ class EvalContext:
         self.cleanup_snapshots = cleanup_snapshots
         self._diff: Optional[DiffResult] = None
 
-    def __enter__(self) -> 'EvalContext':
+    def __enter__(self) -> "EvalContext":
         """Create before snapshot."""
         # For SQLite, use the direct session; for PostgreSQL, use schema-specific session
         session = self.session_manager.get_session(self.schema_name)
@@ -638,7 +663,7 @@ class EvalContext:
                 self.session_manager,
                 self.schema_name,
                 self.before_suffix,
-                self.after_suffix
+                self.after_suffix,
             )
         return self._diff
 
@@ -656,22 +681,3 @@ class EvalContext:
     def deletes(self) -> List[Dict[str, Any]]:
         """Convenience property for getting deletes."""
         return self.get_diff().deletes
-
-
-# ==============================================================================
-# NEW CLEAN API IMPORTS (at end to avoid circular dependencies)
-# ==============================================================================
-
-try:
-    from eval_platform.eval_environment import (
-        EvalEnvironment,
-        DiffTracker,
-        ChangeRecord,
-        setup_eval
-    )
-except ImportError:
-    # If eval_environment can't be imported, stub them out
-    EvalEnvironment = None  # type: ignore
-    DiffTracker = None  # type: ignore
-    ChangeRecord = None  # type: ignore
-    setup_eval = None  # type: ignore

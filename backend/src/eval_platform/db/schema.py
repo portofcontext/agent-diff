@@ -1,22 +1,26 @@
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from datetime import datetime
+from uuid import UUID as PyUUID
+from uuid import uuid4
+
 from sqlalchemy import (
-    String,
+    JSON,
+    BigInteger,
+    Boolean,
     DateTime,
     Enum,
-    UniqueConstraint,
+    ForeignKey,
+    Index,
     Integer,
-    Boolean,
-    BigInteger,
+    String,
+    Text,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
-from sqlalchemy import ForeignKey, Text, Index, JSON
-from datetime import datetime
-from uuid import uuid4, UUID as PyUUID
-from eval_platform.pydantic_mixin import PydanticMixin
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
-class PlatformBase(DeclarativeBase, PydanticMixin):
-    """Base class for platform ORM models with Pydantic serialization."""
+class PlatformBase(DeclarativeBase):
+    """Base class for platform ORM models."""
 
     pass
 

@@ -26,11 +26,7 @@ import tempfile
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Type
-
-from sqlalchemy import create_engine, text
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session, sessionmaker
+from typing import Any, Dict, Generic, List, Literal, Optional, Self, Type, TypeVar, cast, overload
 
 from eval_platform.eval_utilities import create_snapshot, delete_snapshot
 from eval_platform.evaluationEngine.models import DiffResult
@@ -44,8 +40,13 @@ from services.linear.database.schema import Base as LinearBase
 from services.linear.database.typed_operations import LinearOperations
 from services.slack.database.schema import Base as SlackBase
 from services.slack.database.typed_operations import SlackOperations
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session, sessionmaker
 
 ServiceType = Literal["box", "calendar", "slack", "linear"]
+
+OpsT = TypeVar("OpsT", BoxOperations, CalendarOperations, SlackOperations, LinearOperations)
 
 
 @dataclass
@@ -184,7 +185,7 @@ class DiffTracker:
         return [r for r in self._deleted if r.table == table]
 
 
-class EvalEnvironment:
+class EvalEnvironment(Generic[OpsT]):
     """
     One-liner setup for AI agent evaluation environments.
 
@@ -208,6 +209,46 @@ class EvalEnvironment:
             tracker.assert_created(1, "box_folders")
     """
 
+    @overload
+    def __init__(
+        self: EvalEnvironment[BoxOperations],
+        service: Literal["box"],
+        *,
+        database_url: Optional[str] = None,
+        seed_users: int = 1,
+        cleanup: bool = True,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self: EvalEnvironment[CalendarOperations],
+        service: Literal["calendar"],
+        *,
+        database_url: Optional[str] = None,
+        seed_users: int = 1,
+        cleanup: bool = True,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self: EvalEnvironment[SlackOperations],
+        service: Literal["slack"],
+        *,
+        database_url: Optional[str] = None,
+        seed_users: int = 1,
+        cleanup: bool = True,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self: EvalEnvironment[LinearOperations],
+        service: Literal["linear"],
+        *,
+        database_url: Optional[str] = None,
+        seed_users: int = 1,
+        cleanup: bool = True,
+    ) -> None: ...
+
     def __init__(
         self,
         service: ServiceType,
@@ -216,15 +257,6 @@ class EvalEnvironment:
         seed_users: int = 1,
         cleanup: bool = True,
     ):
-        """
-        Initialize an evaluation environment.
-
-        Args:
-            service: Service type ("box", "calendar", "slack", "linear")
-            database_url: Optional database URL (creates temp SQLite if not provided)
-            seed_users: Number of default users to create (default: 1)
-            cleanup: Whether to cleanup database on exit (default: True)
-        """
         self.service = service
         self.seed_users = seed_users
         self.cleanup = cleanup
@@ -240,11 +272,11 @@ class EvalEnvironment:
 
         self.engine: Optional[Engine] = None
         self.session: Optional[Session] = None
-        self.ops: Optional[Any] = None
+        self.ops: OpsT = None  # type: ignore[assignment]
         self.default_user: Optional[Any] = None
         self._session_factory: Optional[sessionmaker] = None
 
-    def __enter__(self) -> EvalEnvironment:
+    def __enter__(self) -> Self:
         """Setup the environment."""
         # Create engine and session
         self.engine = create_engine(self.database_url, echo=False)
@@ -365,9 +397,10 @@ class EvalEnvironment:
 
     def _seed_box_defaults(self) -> None:
         """Seed default Box data."""
+        ops = cast(BoxOperations, self.ops)
         # Create default user
         if self.seed_users >= 1:
-            self.default_user = self.ops.create_user(
+            self.default_user = ops.create_user(
                 name="Test User", login="test@example.com", job_title="Tester"
             )
 
@@ -394,12 +427,13 @@ class EvalEnvironment:
 
     def _seed_slack_defaults(self) -> None:
         """Seed default Slack data."""
+        ops = cast(SlackOperations, self.ops)
         if self.seed_users >= 1:
             # Create default team first
-            self.ops.create_team(team_name="Test Team")
+            ops.create_team(team_name="Test Team")
 
             # Create default user
-            self.default_user = self.ops.create_user(
+            self.default_user = ops.create_user(
                 user_id="U001",
                 username="Test-User",
                 real_name="Test User",
@@ -408,12 +442,13 @@ class EvalEnvironment:
 
     def _seed_linear_defaults(self) -> None:
         """Seed default Linear data."""
+        ops = cast(LinearOperations, self.ops)
         if self.seed_users >= 1:
             # Create organization first
-            org = self.ops.create_organization(name="Test Org")
+            org = ops.create_organization(name="Test Org")
 
             # Create default user
-            self.default_user = self.ops.create_user(
+            self.default_user = ops.create_user(
                 email="test@example.com", name="Test User", organizationId=org.id
             )
 
@@ -527,7 +562,16 @@ class EvalEnvironment:
 
 
 # Convenience function for quick setup
-def setup_eval(service: ServiceType, **kwargs) -> EvalEnvironment:
+@overload
+def setup_eval(service: Literal["box"], **kwargs: Any) -> EvalEnvironment[BoxOperations]: ...
+@overload
+def setup_eval(service: Literal["calendar"], **kwargs: Any) -> EvalEnvironment[CalendarOperations]: ...
+@overload
+def setup_eval(service: Literal["slack"], **kwargs: Any) -> EvalEnvironment[SlackOperations]: ...
+@overload
+def setup_eval(service: Literal["linear"], **kwargs: Any) -> EvalEnvironment[LinearOperations]: ...
+
+def setup_eval(service: ServiceType, **kwargs: Any) -> EvalEnvironment[Any]:
     """
     Quick setup function for evaluations.
 

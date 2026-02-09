@@ -8,26 +8,20 @@ and tests state management utilities just like an AI agent eval would.
 import os
 import sys
 import tempfile
+
 import pytest
-from datetime import datetime
-from pathlib import Path
-
-# Add src to path for imports
-src_path = Path(__file__).parent.parent / "src"
-if str(src_path) not in sys.path:
-    sys.path.insert(0, str(src_path))
-
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
-# Import Slack models and operations
-from services.slack.database.schema import Base, User, Team, Channel, Message
-from services.slack.database.typed_operations import SlackOperations
 from eval_platform.eval_utilities import (
+    clear_environment,
     create_snapshot,
     delete_snapshot,
-    clear_environment,
 )
+
+# Import Slack models and operations
+from services.slack.database.schema import Base, Channel, Message, Team, User
+from services.slack.database.typed_operations import SlackOperations
 
 # Tell pytest to skip conftest fixtures for this file
 pytest_plugins = []
@@ -40,12 +34,14 @@ def simple_diff(session: Session, before_suffix: str, after_suffix: str):
     Returns a dict-like object with inserts, updates, and deletes lists.
     """
     # Get all tables
-    result = session.execute(text("""
+    result = session.execute(
+        text("""
         SELECT name FROM sqlite_master
         WHERE type='table'
         AND name NOT LIKE 'sqlite_%'
         AND name NOT LIKE '%_snapshot_%'
-    """))
+    """)
+    )
     tables = [row[0] for row in result]
 
     inserts = []
@@ -59,16 +55,16 @@ def simple_diff(session: Session, before_suffix: str, after_suffix: str):
         # Get primary key column
         # For Slack, different tables have different PK names
         pk_cols = {
-            'users': 'user_id',
-            'teams': 'team_id',
-            'channels': 'channel_id',
-            'messages': 'message_id',
-            'channel_members': 'membership_id',
-            'message_reactions': 'reaction_id',
-            'user_teams': 'user_team_id',
-            'files': 'file_id',
+            "users": "user_id",
+            "teams": "team_id",
+            "channels": "channel_id",
+            "messages": "message_id",
+            "channel_members": "membership_id",
+            "message_reactions": "reaction_id",
+            "user_teams": "user_team_id",
+            "files": "file_id",
         }
-        pk_col = pk_cols.get(table, 'id')
+        pk_col = pk_cols.get(table, "id")
 
         try:
             # Find inserts (rows in after but not in before)
@@ -80,7 +76,7 @@ def simple_diff(session: Session, before_suffix: str, after_suffix: str):
             columns = insert_results.keys()
             for row in insert_results:
                 row_dict = dict(zip(columns, row))
-                row_dict['__table__'] = table
+                row_dict["__table__"] = table
                 inserts.append(row_dict)
 
             # Find deletes (rows in before but not in after)
@@ -91,7 +87,7 @@ def simple_diff(session: Session, before_suffix: str, after_suffix: str):
             delete_results = session.execute(delete_query)
             for row in delete_results:
                 row_dict = dict(zip(columns, row))
-                row_dict['__table__'] = table
+                row_dict["__table__"] = table
                 deletes.append(row_dict)
         except Exception:
             # Skip tables that don't exist in both snapshots
@@ -172,7 +168,7 @@ def test_basic_operations(sqlite_db):
         username="jdoe",
         email="jdoe@acme.com",
         real_name="John Doe",
-        display_name="John"
+        display_name="John",
     )
 
     # Verify user was created
@@ -186,10 +182,7 @@ def test_basic_operations(sqlite_db):
     assert "jdoe" in user_json
 
     # Create a channel
-    channel = ops.create_channel(
-        channel_name="general",
-        team_id=team.team_id
-    )
+    channel = ops.create_channel(channel_name="general", team_id=team.team_id)
 
     # Verify channel was created
     assert channel.channel_id is not None
@@ -202,8 +195,7 @@ def test_basic_operations(sqlite_db):
 
     # Invite user to channel
     membership = ops.invite_user_to_channel(
-        channel_id=channel.channel_id,
-        user_id=user.user_id
+        channel_id=channel.channel_id, user_id=user.user_id
     )
 
     # Verify membership was created
@@ -211,9 +203,7 @@ def test_basic_operations(sqlite_db):
 
     # Send a message
     message = ops.send_message(
-        channel_id=channel.channel_id,
-        user_id=user.user_id,
-        text="Hello, world!"
+        channel_id=channel.channel_id, user_id=user.user_id, text="Hello, world!"
     )
 
     # Verify message was created
@@ -236,35 +226,28 @@ def test_state_management_with_snapshots(sqlite_db):
 
     # Step 1: Create baseline state
     team = ops.create_team(team_name="Test Team")
-    user = ops.create_user(
-        username="agent",
-        email="agent@example.com"
-    )
-    channel = ops.create_channel(
-        channel_name="test-channel",
-        team_id=team.team_id
-    )
-    ops.invite_user_to_channel(
-        channel_id=channel.channel_id,
-        user_id=user.user_id
-    )
+    user = ops.create_user(username="agent", email="agent@example.com")
+    channel = ops.create_channel(channel_name="test-channel", team_id=team.team_id)
+    ops.invite_user_to_channel(channel_id=channel.channel_id, user_id=user.user_id)
 
     # Step 2: Take "before" snapshot
     before_snapshot = create_snapshot(session, "main", "before")
     assert before_snapshot.table_count > 0
-    print(f"✓ Created before snapshot: {before_snapshot.table_count} tables, {before_snapshot.total_rows} rows")
+    print(
+        f"✓ Created before snapshot: {before_snapshot.table_count} tables, {before_snapshot.total_rows} rows"
+    )
 
     # Step 3: Simulate agent action - send a message
     message = ops.send_message(
-        channel_id=channel.channel_id,
-        user_id=user.user_id,
-        text="Test message"
+        channel_id=channel.channel_id, user_id=user.user_id, text="Test message"
     )
     session.commit()
 
     # Step 4: Take "after" snapshot
     after_snapshot = create_snapshot(session, "main", "after")
-    print(f"✓ Created after snapshot: {after_snapshot.table_count} tables, {after_snapshot.total_rows} rows")
+    print(
+        f"✓ Created after snapshot: {after_snapshot.table_count} tables, {after_snapshot.total_rows} rows"
+    )
 
     # Step 5: Get diff
     diff = simple_diff(session, "before", "after")
@@ -277,7 +260,7 @@ def test_state_management_with_snapshots(sqlite_db):
     assert insert["message_text"] == "Test message"
     assert insert["channel_id"] == channel.channel_id
 
-    print(f"✓ Diff captured correctly:")
+    print("✓ Diff captured correctly:")
     print(f"  - Inserts: {len(diff.inserts)}")
     print(f"  - Updates: {len(diff.updates)}")
     print(f"  - Deletes: {len(diff.deletes)}")
@@ -301,9 +284,7 @@ def test_clear_environment(sqlite_db):
     channel = ops.create_channel(channel_name="channel1", team_id=team.team_id)
     ops.invite_user_to_channel(channel_id=channel.channel_id, user_id=user1.user_id)
     message = ops.send_message(
-        channel_id=channel.channel_id,
-        user_id=user1.user_id,
-        text="Test"
+        channel_id=channel.channel_id, user_id=user1.user_id, text="Test"
     )
     session.commit()
 
@@ -324,11 +305,37 @@ def test_clear_environment(sqlite_db):
     # Verify all data was deleted (query fresh from database)
     # Slack operations raise exceptions instead of returning None, so we verify differently
     from sqlalchemy import select
-    assert session.execute(select(User).where(User.user_id == user1_id)).scalar_one_or_none() is None
-    assert session.execute(select(User).where(User.user_id == user2_id)).scalar_one_or_none() is None
-    assert session.execute(select(Team).where(Team.team_id == team_id)).scalar_one_or_none() is None
-    assert session.execute(select(Channel).where(Channel.channel_id == channel_id)).scalar_one_or_none() is None
-    assert session.execute(select(Message).where(Message.message_id == message_id)).scalar_one_or_none() is None
+
+    assert (
+        session.execute(
+            select(User).where(User.user_id == user1_id)
+        ).scalar_one_or_none()
+        is None
+    )
+    assert (
+        session.execute(
+            select(User).where(User.user_id == user2_id)
+        ).scalar_one_or_none()
+        is None
+    )
+    assert (
+        session.execute(
+            select(Team).where(Team.team_id == team_id)
+        ).scalar_one_or_none()
+        is None
+    )
+    assert (
+        session.execute(
+            select(Channel).where(Channel.channel_id == channel_id)
+        ).scalar_one_or_none()
+        is None
+    )
+    assert (
+        session.execute(
+            select(Message).where(Message.message_id == message_id)
+        ).scalar_one_or_none()
+        is None
+    )
 
     print("✓ Environment cleared successfully")
 
@@ -353,20 +360,14 @@ def test_complete_agent_eval_workflow(sqlite_db):
     # Setup: Create baseline team, user, and channel
     team = ops.create_team(team_name="Test Team")
     user = ops.create_user(
-        username="agent",
-        email="agent@test.com",
-        real_name="Test Agent"
+        username="agent", email="agent@test.com", real_name="Test Agent"
     )
-    channel = ops.create_channel(
-        channel_name="general",
-        team_id=team.team_id
-    )
-    ops.invite_user_to_channel(
-        channel_id=channel.channel_id,
-        user_id=user.user_id
-    )
+    channel = ops.create_channel(channel_name="general", team_id=team.team_id)
+    ops.invite_user_to_channel(channel_id=channel.channel_id, user_id=user.user_id)
     session.commit()
-    print(f"✓ Setup: Created team {team.team_id}, user {user.user_id}, channel {channel.channel_id}")
+    print(
+        f"✓ Setup: Created team {team.team_id}, user {user.user_id}, channel {channel.channel_id}"
+    )
 
     # Before snapshot
     create_snapshot(session, "main", "before")
@@ -376,9 +377,7 @@ def test_complete_agent_eval_workflow(sqlite_db):
     # (This is where the AI agent would use its tool)
     print("\n→ Agent action: Sending message 'Hello team!'...")
     message = ops.send_message(
-        channel_id=channel.channel_id,
-        user_id=user.user_id,
-        text="Hello team!"
+        channel_id=channel.channel_id, user_id=user.user_id, text="Hello team!"
     )
     session.commit()
     print(f"✓ Agent sent message {message.message_id}")
@@ -399,11 +398,15 @@ def test_complete_agent_eval_workflow(sqlite_db):
 
         # Check it was a message
         insert = diff.inserts[0]
-        assert insert["__table__"] == "messages", f"Expected messages, got {insert['__table__']}"
+        assert insert["__table__"] == "messages", (
+            f"Expected messages, got {insert['__table__']}"
+        )
         print("✓ Assertion passed: Entity is a message")
 
         # Check message text
-        assert insert["message_text"] == "Hello team!", f"Expected 'Hello team!', got {insert['text']}"
+        assert insert["message_text"] == "Hello team!", (
+            f"Expected 'Hello team!', got {insert['text']}"
+        )
         print("✓ Assertion passed: Message text is 'Hello team!'")
 
         # Check channel ID
@@ -439,9 +442,7 @@ def test_multiple_operations_diff(sqlite_db):
     channel = ops.create_channel(channel_name="channel", team_id=team.team_id)
     ops.invite_user_to_channel(channel_id=channel.channel_id, user_id=user.user_id)
     message1 = ops.send_message(
-        channel_id=channel.channel_id,
-        user_id=user.user_id,
-        text="Message 1"
+        channel_id=channel.channel_id, user_id=user.user_id, text="Message 1"
     )
     session.commit()
 
@@ -450,19 +451,12 @@ def test_multiple_operations_diff(sqlite_db):
 
     # Multiple agent actions
     message2 = ops.send_message(
-        channel_id=channel.channel_id,
-        user_id=user.user_id,
-        text="Message 2"
+        channel_id=channel.channel_id, user_id=user.user_id, text="Message 2"
     )
     message3 = ops.send_message(
-        channel_id=channel.channel_id,
-        user_id=user.user_id,
-        text="Message 3"
+        channel_id=channel.channel_id, user_id=user.user_id, text="Message 3"
     )
-    ops.update_message(
-        message_id=message1.message_id,
-        text="Updated Message 1"
-    )
+    ops.update_message(message_id=message1.message_id, text="Updated Message 1")
     session.commit()
 
     # After snapshot
@@ -482,7 +476,7 @@ def test_multiple_operations_diff(sqlite_db):
     print("✓ Multiple operations diff captured correctly:")
     print(f"  - {len(diff.inserts)} inserts")
     print(f"  - {len(diff.deletes)} deletes")
-    print(f"  - Note: simple_diff for SQLite only tracks inserts/deletes")
+    print("  - Note: simple_diff for SQLite only tracks inserts/deletes")
 
     # Cleanup
     delete_snapshot(session, "main", "before")
@@ -492,4 +486,5 @@ def test_multiple_operations_diff(sqlite_db):
 if __name__ == "__main__":
     # Run tests directly with pytest
     import sys
+
     sys.exit(pytest.main([__file__, "-v", "-s"]))

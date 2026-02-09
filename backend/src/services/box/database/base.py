@@ -6,10 +6,8 @@ Following patterns from Slack and Linear replicas.
 
 from sqlalchemy.orm import DeclarativeBase
 
-from eval_platform.pydantic_mixin import PydanticMixin
 
-
-class Base(DeclarativeBase, PydanticMixin):
-    """SQLAlchemy declarative base for Box models with Pydantic serialization."""
+class Base(DeclarativeBase):
+    """SQLAlchemy declarative base for Box models."""
 
     pass

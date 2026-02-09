@@ -11,13 +11,13 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from . import operations as ops
-from .schema import (
-    Channel,
-    ChannelMember,
-    Message,
-    MessageReaction,
-    Team,
-    User,
+from .pydantic_schemas import (
+    ChannelMemberSchema,
+    ChannelSchema,
+    MessageReactionSchema,
+    MessageSchema,
+    TeamSchema,
+    UserSchema,
 )
 
 
@@ -75,7 +75,7 @@ class SlackOperations:
         team_id: Optional[str] = None,
         created_at: Optional[datetime] = None,
         default_channel_name: Optional[str] = None,
-    ) -> Team:
+    ) -> TeamSchema:
         """
         Create a new Slack team/workspace.
 
@@ -88,13 +88,14 @@ class SlackOperations:
         Returns:
             Team model
         """
-        return ops.create_team(
+        team = ops.create_team(
             self.session,
             team_name=team_name,
             team_id=team_id,
             created_at=created_at,
             default_channel_name=default_channel_name,
         )
+        return TeamSchema.model_validate(team)
 
     # ========================================================================
     # USER OPERATIONS
@@ -111,7 +112,7 @@ class SlackOperations:
         display_name: Optional[str] = None,
         timezone: Optional[str] = None,
         title: Optional[str] = None,
-    ) -> User:
+    ) -> UserSchema:
         """
         Create a new Slack user.
 
@@ -128,7 +129,7 @@ class SlackOperations:
         Returns:
             User model
         """
-        return ops.create_user(
+        user = ops.create_user(
             self.session,
             username=username,
             email=email,
@@ -139,8 +140,9 @@ class SlackOperations:
             timezone=timezone,
             title=title,
         )
+        return UserSchema.model_validate(user)
 
-    def get_user(self, user_id: str) -> User:
+    def get_user(self, user_id: str) -> UserSchema:
         """
         Get a user by ID.
 
@@ -153,9 +155,10 @@ class SlackOperations:
         Raises:
             ValueError: If user not found
         """
-        return ops.get_user(self.session, user_id)
+        user = ops.get_user(self.session, user_id)
+        return UserSchema.model_validate(user)
 
-    def get_user_by_email(self, email: str) -> User:
+    def get_user_by_email(self, email: str) -> UserSchema:
         """
         Get a user by email address.
 
@@ -168,9 +171,10 @@ class SlackOperations:
         Raises:
             ValueError: If user not found
         """
-        return ops.get_user_by_email(self.session, email)
+        user = ops.get_user_by_email(self.session, email)
+        return UserSchema.model_validate(user)
 
-    def list_users(self, team_id: str) -> list[User]:
+    def list_users(self, team_id: str) -> list[UserSchema]:
         """
         List all users in a team.
 
@@ -180,7 +184,8 @@ class SlackOperations:
         Returns:
             List of User models
         """
-        return ops.list_users(self.session, team_id)
+        users = ops.list_users(self.session, team_id)
+        return [UserSchema.model_validate(u) for u in users]
 
     # ========================================================================
     # CHANNEL OPERATIONS
@@ -193,7 +198,7 @@ class SlackOperations:
         *,
         channel_id: Optional[str] = None,
         created_at: Optional[datetime] = None,
-    ) -> Channel:
+    ) -> ChannelSchema:
         """
         Create a new channel.
 
@@ -209,15 +214,16 @@ class SlackOperations:
         Raises:
             ValueError: If team not found or channel name already taken
         """
-        return ops.create_channel(
+        channel = ops.create_channel(
             self.session,
             channel_name=channel_name,
             team_id=team_id,
             channel_id=channel_id,
             created_at=created_at,
         )
+        return ChannelSchema.model_validate(channel)
 
-    def archive_channel(self, channel_id: str) -> Channel:
+    def archive_channel(self, channel_id: str) -> ChannelSchema:
         """
         Archive a channel.
 
@@ -230,9 +236,10 @@ class SlackOperations:
         Raises:
             ValueError: If channel not found
         """
-        return ops.archive_channel(self.session, channel_id)
+        channel = ops.archive_channel(self.session, channel_id)
+        return ChannelSchema.model_validate(channel)
 
-    def unarchive_channel(self, channel_id: str) -> Channel:
+    def unarchive_channel(self, channel_id: str) -> ChannelSchema:
         """
         Unarchive a channel.
 
@@ -245,9 +252,10 @@ class SlackOperations:
         Raises:
             ValueError: If channel not found
         """
-        return ops.unarchive_channel(self.session, channel_id)
+        channel = ops.unarchive_channel(self.session, channel_id)
+        return ChannelSchema.model_validate(channel)
 
-    def rename_channel(self, channel_id: str, new_name: str) -> Channel:
+    def rename_channel(self, channel_id: str, new_name: str) -> ChannelSchema:
         """
         Rename a channel.
 
@@ -261,9 +269,10 @@ class SlackOperations:
         Raises:
             ValueError: If channel not found
         """
-        return ops.rename_channel(self.session, channel_id, new_name)
+        channel = ops.rename_channel(self.session, channel_id, new_name)
+        return ChannelSchema.model_validate(channel)
 
-    def set_channel_topic(self, channel_id: str, topic: str) -> Channel:
+    def set_channel_topic(self, channel_id: str, topic: str) -> ChannelSchema:
         """
         Set a channel's topic.
 
@@ -277,7 +286,8 @@ class SlackOperations:
         Raises:
             ValueError: If channel not found
         """
-        return ops.set_channel_topic(self.session, channel_id, topic)
+        channel = ops.set_channel_topic(self.session, channel_id, topic)
+        return ChannelSchema.model_validate(channel)
 
     def invite_user_to_channel(
         self,
@@ -285,7 +295,7 @@ class SlackOperations:
         user_id: str,
         *,
         joined_at: Optional[datetime] = None,
-    ) -> ChannelMember:
+    ) -> ChannelMemberSchema:
         """
         Invite a user to a channel.
 
@@ -300,14 +310,17 @@ class SlackOperations:
         Raises:
             ValueError: If channel or user not found
         """
-        return ops.invite_user_to_channel(
+        member = ops.invite_user_to_channel(
             self.session,
             channel_id=channel_id,
             user_id=user_id,
             joined_at=joined_at,
         )
+        return ChannelMemberSchema.model_validate(member)
 
-    def kick_user_from_channel(self, channel_id: str, user_id: str) -> None:
+    def kick_user_from_channel(
+        self, channel_id: str, user_id: str
+    ) -> ChannelMemberSchema:
         """
         Remove a user from a channel.
 
@@ -315,7 +328,8 @@ class SlackOperations:
             channel_id: Channel ID
             user_id: User ID to remove
         """
-        ops.kick_user_from_channel(self.session, channel_id, user_id)
+        member = ops.kick_user_from_channel(self.session, channel_id, user_id)
+        return ChannelMemberSchema.model_validate(member)
 
     def join_channel(
         self,
@@ -323,7 +337,7 @@ class SlackOperations:
         user_id: str,
         *,
         joined_at: Optional[datetime] = None,
-    ) -> ChannelMember:
+    ) -> ChannelMemberSchema:
         """
         User joins a channel.
 
@@ -335,12 +349,13 @@ class SlackOperations:
         Returns:
             ChannelMember model
         """
-        return ops.join_channel(
+        member = ops.join_channel(
             self.session,
             channel_id=channel_id,
             user_id=user_id,
             joined_at=joined_at,
         )
+        return ChannelMemberSchema.model_validate(member)
 
     def leave_channel(self, channel_id: str, user_id: str) -> None:
         """
@@ -358,7 +373,7 @@ class SlackOperations:
         team_id: str,
         *,
         exclude_archived: bool = False,
-    ) -> list[Channel]:
+    ) -> list[ChannelSchema]:
         """
         List channels a user is a member of.
 
@@ -370,14 +385,15 @@ class SlackOperations:
         Returns:
             List of Channel models
         """
-        return ops.list_user_channels(
+        channels = ops.list_user_channels(
             self.session,
             user_id=user_id,
             team_id=team_id,
             exclude_archived=exclude_archived,
         )
+        return [ChannelSchema.model_validate(c) for c in channels]
 
-    def list_public_channels(self, team_id: str) -> list[Channel]:
+    def list_public_channels(self, team_id: str) -> list[ChannelSchema]:
         """
         List all public channels in a team.
 
@@ -387,7 +403,8 @@ class SlackOperations:
         Returns:
             List of Channel models
         """
-        return ops.list_public_channels(self.session, team_id)
+        channels = ops.list_public_channels(self.session, team_id)
+        return [ChannelSchema.model_validate(c) for c in channels]
 
     # ========================================================================
     # MESSAGE OPERATIONS
@@ -402,7 +419,7 @@ class SlackOperations:
         parent_id: Optional[str] = None,
         created_at: Optional[datetime] = None,
         blocks: Optional[list] = None,
-    ) -> Message:
+    ) -> MessageSchema:
         """
         Send a message to a channel.
 
@@ -420,7 +437,7 @@ class SlackOperations:
         Raises:
             ValueError: If channel or user not found, or user not in channel
         """
-        return ops.send_message(
+        message = ops.send_message(
             self.session,
             channel_id=channel_id,
             user_id=user_id,
@@ -429,6 +446,7 @@ class SlackOperations:
             created_at=created_at,
             blocks=blocks,
         )
+        return MessageSchema.model_validate(message)
 
     def send_direct_message(
         self,
@@ -439,7 +457,7 @@ class SlackOperations:
         team_id: Optional[str] = None,
         created_at: Optional[datetime] = None,
         blocks: Optional[list] = None,
-    ) -> Message:
+    ) -> MessageSchema:
         """
         Send a direct message to another user.
 
@@ -457,7 +475,7 @@ class SlackOperations:
         Raises:
             ValueError: If sender or recipient not found
         """
-        return ops.send_direct_message(
+        message = ops.send_direct_message(
             self.session,
             message_text=text,
             sender_id=sender_id,
@@ -466,6 +484,7 @@ class SlackOperations:
             created_at=created_at,
             blocks=blocks,
         )
+        return MessageSchema.model_validate(message)
 
     def update_message(
         self,
@@ -473,7 +492,7 @@ class SlackOperations:
         text: str,
         *,
         blocks: Optional[list] = None,
-    ) -> Message:
+    ) -> MessageSchema:
         """
         Update a message.
 
@@ -488,12 +507,13 @@ class SlackOperations:
         Raises:
             ValueError: If message not found
         """
-        return ops.update_message(
+        message = ops.update_message(
             self.session,
             message_id=message_id,
             text=text,
             blocks=blocks,
         )
+        return MessageSchema.model_validate(message)
 
     def delete_message(self, message_id: str) -> None:
         """
@@ -509,7 +529,7 @@ class SlackOperations:
         message_id: str,
         user_id: str,
         emoji_name: str,
-    ) -> MessageReaction:
+    ) -> MessageReactionSchema:
         """
         Add an emoji reaction to a message.
 
@@ -524,12 +544,13 @@ class SlackOperations:
         Raises:
             ValueError: If message or user not found
         """
-        return ops.add_emoji_reaction(
+        reaction = ops.add_emoji_reaction(
             self.session,
             message_id=message_id,
             user_id=user_id,
             emoji_name=emoji_name,
         )
+        return MessageReactionSchema.model_validate(reaction)
 
     def remove_emoji_reaction(self, user_id: str, reaction_id: str) -> None:
         """
@@ -541,7 +562,7 @@ class SlackOperations:
         """
         ops.remove_emoji_reaction(self.session, user_id, reaction_id)
 
-    def get_reactions(self, message_id: str) -> list[MessageReaction]:
+    def get_reactions(self, message_id: str) -> list[MessageReactionSchema]:
         """
         Get all reactions for a message.
 
@@ -551,7 +572,8 @@ class SlackOperations:
         Returns:
             List of MessageReaction models
         """
-        return ops.get_reactions(self.session, message_id)
+        reactions = ops.get_reactions(self.session, message_id)
+        return [MessageReactionSchema.model_validate(r) for r in reactions]
 
     def list_channel_history(
         self,
@@ -560,7 +582,7 @@ class SlackOperations:
         limit: int = 100,
         oldest: Optional[str] = None,
         latest: Optional[str] = None,
-    ) -> list[Message]:
+    ) -> list[MessageSchema]:
         """
         List messages in a channel.
 
@@ -573,20 +595,21 @@ class SlackOperations:
         Returns:
             List of Message models
         """
-        return ops.list_channel_history(
+        messages = ops.list_channel_history(
             self.session,
             channel_id=channel_id,
             limit=limit,
             oldest=oldest,
             latest=latest,
         )
+        return [MessageSchema.model_validate(m) for m in messages]
 
     def list_thread_messages(
         self,
         thread_ts: str,
         *,
         limit: int = 100,
-    ) -> list[Message]:
+    ) -> list[MessageSchema]:
         """
         List messages in a thread.
 
@@ -597,8 +620,9 @@ class SlackOperations:
         Returns:
             List of Message models
         """
-        return ops.list_thread_messages(
+        messages = ops.list_thread_messages(
             self.session,
             thread_ts=thread_ts,
             limit=limit,
         )
+        return [MessageSchema.model_validate(m) for m in messages]
