@@ -1,6 +1,7 @@
 from pprint import pprint
 from typing import Callable
 
+from langchain.tools import tool as langchain_tool
 from pctx_client import tool as pctx_tool
 
 from eval_platform.eval_utilities import EvalEnvironment
@@ -178,3 +179,36 @@ def test_linear_operations_as_pctx_tools():
             print("=" * 20 + tool.name + "=" * 20)
             pprint(tool.input_json_schema())
             pprint(tool.output_json_schema())
+
+
+def test_box_operations_as_langchain_tools():
+    with EvalEnvironment("box") as env:
+        ops: list[Callable] = [
+            env.ops.get_user,
+            env.ops.get_user_by_email,
+            env.ops.create_user,
+            env.ops.get_folder,
+            env.ops.create_folder,
+            env.ops.update_folder,
+            env.ops.delete_folder,
+            env.ops.list_folder_items,
+            env.ops.get_file,
+            env.ops.create_file,
+            env.ops.update_file,
+            env.ops.delete_file,
+            env.ops.upload_file_version,
+            env.ops.create_comment,
+            env.ops.get_comment,
+            env.ops.update_comment,
+            env.ops.delete_comment,
+            env.ops.search_content,
+        ]
+        for op in ops:
+            tool = langchain_tool(op)
+
+            print("")
+
+            print("=" * 20 + tool.name + "=" * 20)
+            print("tool.OutputType", tool.OutputType)
+            pprint(tool.get_input_jsonschema())
+            pprint(tool.get_output_jsonschema())
